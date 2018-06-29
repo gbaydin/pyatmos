@@ -11,8 +11,15 @@ class Simulation():
 
     def start(self):
         print('Starting Docker container...')
-        self._container = self._docker_client.containers.run('registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', detach=True)
+        self._container = self._docker_client.containers.run('registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', detach=True, tty=True)
         print('Container running.')
         print('Initializing simulation...')
         self._container.exec_run('./pyatmos_coupled_init.sh')
         print('Ready.')
+
+    def run(self, iterations=1):
+        print('Running {} iterations...'.format(iterations))
+        for i in range(iterations):
+            print('Iteration {}'.format(i+1))
+            self._container.exec_run('./pyatmos_coupled_iterate.sh')
+        print('Done.')
