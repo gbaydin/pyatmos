@@ -4,4 +4,4 @@ A Docker image for [Atmos](https://github.com/VirtualPlanetaryLaboratory/atmos) 
 
 Initial work by Adam Cobb and Atilim Gunes Baydin.
 
-Documentation to follow soon.
+Work in progress. Documentation to follow soon.
