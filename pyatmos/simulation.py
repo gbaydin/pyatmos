@@ -1,5 +1,6 @@
 import docker
 import tempfile
+import os
 
 import pyatmos
 
@@ -29,13 +30,16 @@ class Simulation():
         print('Done.')
 
     def get_input_clima(self):
-        self._docker_client.get_archive(self._container, '/code/atmos/CLIMA/IO/input_clima.dat')
-        raw_data=strm.read()
-        ret = {}
-        with tempfile.NamedTemporaryFile() as file:
-            file.file.write(raw_data)
-            ret = pyatmos.util.read_file(file.name)
-        return ret
+        return self._get_container_file('/code/atmos/CLIMA/IO/input_clima.dat')
+
+    def get_input_photochem(self):
+        return self._get_container_file('/code/atmos/PHOTOCHEM/INPUTFILES/input_photchem.dat')
+
+    def _get_container_file(self, container_file_name):
+        tmp_file_name = tempfile.NamedTemporaryFile().name
+        cmd = 'docker cp ' + self._container.name + ':' + container_file_name + ' ' + tmp_file_name
+        os.system(cmd)
+        return pyatmos.util.read_file(tmp_file_name)
 
     def __enter__(self):
         return self

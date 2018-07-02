@@ -28,7 +28,7 @@ setup(
     author='Atilim Gunes Baydin and Adam Cobb',
     author_email='gunes@robots.ox.ac.uk',
     packages=find_packages(),
-    install_requires=['docker==2.4.2'],
+    install_requires=['docker==3.4.0'],
     url='https://gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos',
     classifiers=['Development Status :: 4 - Beta', 'License :: OSI Approved :: BSD License', 'Programming Language :: Python :: 3.5'],
     license='BSD',
