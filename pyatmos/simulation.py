@@ -1,4 +1,7 @@
 import docker
+import tempfile
+
+import pyatmos
 
 class Simulation():
     def __init__(self, docker_image='registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos'):
@@ -7,6 +10,7 @@ class Simulation():
         self._docker_client = docker.from_env()
         print('Pulling latest image... {}'.format(self._docker_image))
         self._docker_client.images.pull(self._docker_image)
+        self._container = None
         print('Ready.')
 
     def start(self):
@@ -23,3 +27,27 @@ class Simulation():
             print('Iteration {}'.format(i+1))
             self._container.exec_run('./pyatmos_coupled_iterate.sh')
         print('Done.')
+
+    def get_input_clima(self):
+        self._docker_client.get_archive(self._container, '/code/atmos/CLIMA/IO/input_clima.dat')
+        raw_data=strm.read()
+        ret = {}
+        with tempfile.NamedTemporaryFile() as file:
+            file.file.write(raw_data)
+            ret = pyatmos.util.read_file(file.name)
+        return ret
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        self.close()
+
+    def __del__(self):
+        self.close()
+
+    def close(self):
+        print('Exiting...')
+        if self._container is not None:
+            print('Container killed.')
+            self._container.kill()
