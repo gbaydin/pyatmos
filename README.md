@@ -6,6 +6,8 @@ Initial work by Adam Cobb and Atilim Gunes Baydin.
 
 Work in progress. Documentation to follow soon.
 
+![screenshot](https://gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos/raw/master/screenshot.png)
+
 ## How to install
 
 You can clone this repository and install the `pyatmos` package. You need to have Docker installed in your system.
