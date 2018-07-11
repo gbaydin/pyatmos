@@ -1,0 +1,59 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+Docker image building:
+
+Copy following from /PHOTOCHEM/INPUTFILES/TEMPLATES/ModernEarth to /PHOTOCHEM
+in.dist
+
+Copy following from /PHOTOCHEM/INPUTFILES/TEMPLATES/ModernEarth to /PHOTOCHEM/INPUTFILES
+input_photchem.dat
+reactions.rx
+parameters.inc
+species.dat
+PLANET.dat
+
+make '-f' 'PhotoMake' 'clean'
+make '-f' 'PhotoMake'
+
+./Photo.run
+
+Copy /CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat to /CLIMA/IO (this includes NSTEPS=    (number))
+
+make -f ClimaMake clean
+make -f ClimaMake
+
+./Clima.run
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+Run different inputs from Python
+
+Modify /PHOTOCHEM/INPUTFILES/species.dat
+Potentially modify /PHOTOCHEM/INPUTFILES/PLANET.dat
+To help with convergence, potentially replace /PHOTOCHEM/in.dist with a /PHOTOCHEM/PUTPUT/out.dist from another run
+
+./Photo.run
+
+Check for convergence:
+check in /PHOTOCHEM/OUTPUT/out.out for max N = (number)
+if number < 10k: converged
+
+
+
+Modify /CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat to /CLIMA/IO (this includes NSTEPS=    (number)) to change the number of steps
+
+To help with convergence, potentially replace /CLIMA/IO/TempIn.dat with /CLIMA/IO/TempOut.dat
+Also set IUP=       0 in /CLIMA/IO/input_clima.dat
+
+
+
+if converged:
+./Clima.run
+
+
+
+Save the following as output:
+/PHOTOCHEM/OUTPUT/out.dist
+/PHOTOCHEM/OUTPUT/out.out
+/CLIMA/IO/clima_allout.tab
