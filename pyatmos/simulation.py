@@ -1,6 +1,7 @@
 import docker
 import tempfile
 import os
+#import numpy
 
 import pyatmos
 
@@ -18,10 +19,93 @@ class Simulation():
         print('Starting Docker container...')
         self._container = self._docker_client.containers.run('registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', detach=True, tty=True)
         print('Container running.')
-        print('Initializing simulation...')
-        self._container.exec_run('./pyatmos_coupled_init.sh')
-        print('Ready.')
 
+    def run(self, species, max_iterations):
+        '''
+        Args: 
+            species: dictionary, 
+            iterations: int, 
+        '''
+
+        # modify species file
+
+
+        # run photochem 
+        self._container.exec_run('./Photo.run')
+        print('run photo finished')
+
+        # check for convergence of photochem   
+        photochem_converged = self.check_photochem_convergence(max_iterations)
+
+        if photochem_converged: 
+            print('photochem converged')
+
+            #Modify /CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat to /CLIMA/IO (this includes NSTEPS=    (number)) to change the number of steps
+
+            #To help with convergence, potentially replace /CLIMA/IO/TempIn.dat with /CLIMA/IO/TempOut.dat
+            #Also set IUP=       0 in /CLIMA/IO/input_clima.dat
+
+            #if converged:
+            #./Clima.run
+
+            #
+
+            print('running clima ...')
+            #self._container.exec_run('./Clima.run')
+            print('finished clima')
+            return 1 
+
+        else:
+            print('photochem did not converge before {0} iterations'.format(max_iterations))
+
+            return 1 
+
+
+
+    def check_photochem_convergence(self, max_iterations):
+        '''
+        Check that photochem has converged, search the output file for N = (number)
+        if number < max_iterations then convergence has been achived 
+        Args:
+            max_iterations: an interger with the maximum number of iterations for convergence 
+        '''
+
+        #output = self._container.exec_run("grep 'N =' /code/atmos/PHOTOCHEM/OUTPUT/out.out")
+        output = self._read_container_file('/code/atmos/PHOTOCHEM/OUTPUT/out.out')
+
+        # find last "N = " and "EMAX"
+        iterations = []
+        for line in output:
+            if 'N =' in line and 'EMAX' in line:
+                iterations.append(line)
+        last_line = iterations[-1]
+        last_line = ' '.join(last_line.split()) # merge whitespace 
+        number_of_iterations = int(last_line.split()[2])
+
+        if number_of_iterations < max_iterations:
+            return True
+        else:
+            return False 
+
+
+    def _read_container_file(self, container_file_name):
+        tmp_file_name = tempfile.NamedTemporaryFile().name
+        cmd = 'docker cp ' + self._container.name + ':' + container_file_name + ' ' + tmp_file_name
+        os.system(cmd)
+        return pyatmos.util.strings_file(tmp_file_name)
+
+    def _get_container_file(self, container_file_name):
+        tmp_file_name = tempfile.NamedTemporaryFile().name
+        cmd = 'docker cp ' + self._container.name + ':' + container_file_name + ' ' + tmp_file_name
+        os.system(cmd)
+        return pyatmos.util.read_file(tmp_file_name)
+
+
+    def _set_container_file(self):
+        # todo 
+        pass
+
+    '''
     def run(self, iterations=1):
         print('Running {} iterations...'.format(iterations))
         for i in range(iterations):
@@ -35,11 +119,8 @@ class Simulation():
     def get_input_photochem(self):
         return self._get_container_file('/code/atmos/PHOTOCHEM/INPUTFILES/input_photchem.dat')
 
-    def _get_container_file(self, container_file_name):
-        tmp_file_name = tempfile.NamedTemporaryFile().name
-        cmd = 'docker cp ' + self._container.name + ':' + container_file_name + ' ' + tmp_file_name
-        os.system(cmd)
-        return pyatmos.util.read_file(tmp_file_name)
+
+    '''
 
     def __enter__(self):
         return self

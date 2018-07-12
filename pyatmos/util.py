@@ -16,3 +16,11 @@ def read_file(file_name):
                         val = float(val)
                     ret[key] = val
     return ret
+
+def strings_file(file_name):
+    li = []
+    with open(file_name, 'r') as file:
+        for line in file.readlines():
+            li.append(line)
+    return li 
+
