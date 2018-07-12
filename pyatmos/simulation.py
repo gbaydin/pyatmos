@@ -20,14 +20,20 @@ class Simulation():
         self._container = self._docker_client.containers.run('registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', detach=True, tty=True)
         print('Container running.')
 
-    def run(self, species, max_iterations):
+    def run(self, species, max_iterations, n_clima_steps):
         '''
         Args: 
             species: dictionary, 
-            iterations: int, 
+            max_iterations: int, 
+            n_clima_steps: int, number of steps taken by clima 
         '''
 
         # modify species file
+        species_file = self._read_container_file('/code/atmos/PHOTOCHEM/INPUTFILES/species.dat')
+
+        # overwrite a file 
+        print(type(species_file))
+
 
 
         # run photochem 
@@ -41,6 +47,28 @@ class Simulation():
             print('photochem converged')
 
             #Modify /CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat to /CLIMA/IO (this includes NSTEPS=    (number)) to change the number of steps
+            clima_input = self._read_container_file('/code/atmos/CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat')
+            replacement_clima = [] 
+            for line in clima_input:
+                if 'NSTEPS=' in line:
+                    line = 'NSTEPS=    {0}           !step number (200 recommended for coupling)\n'.format(n_clima_steps)
+                replacement_clima.append(line)
+            tmp_file_name = tempfile.NamedTemporaryFile().name
+            tmp_file = open(tmp_file_name, 'w')
+            for l in replacement_clima:
+                tmp_file.write(l)
+            self._write_container_file(tmp_file, '/code/atmos/CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat')
+
+
+            # check that it worked
+            new_clima = self._read_container_file('/code/atmos/CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat')
+
+
+
+
+
+
+
 
             #To help with convergence, potentially replace /CLIMA/IO/TempIn.dat with /CLIMA/IO/TempOut.dat
             #Also set IUP=       0 in /CLIMA/IO/input_clima.dat
@@ -87,9 +115,12 @@ class Simulation():
         else:
             return False 
 
+    def _write_container_file(self, input_file_name, output_file_name):
+        cmd = 'docker cp ' + input_file_name + ' ' + self._container.name + ':' + output_file_name
 
     def _read_container_file(self, container_file_name):
         tmp_file_name = tempfile.NamedTemporaryFile().name
+        print('_read_container_file: ' + tmp_file_name)
         cmd = 'docker cp ' + self._container.name + ':' + container_file_name + ' ' + tmp_file_name
         os.system(cmd)
         return pyatmos.util.strings_file(tmp_file_name)
