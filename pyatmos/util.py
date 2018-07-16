@@ -25,14 +25,78 @@ def strings_file(file_name):
     return li 
 
 
+
 def parse_species(file_name):
+
+    long_lived_species  = {}
+    short_lived_species = {}
+    inert_species       = {}
+    other_species       = {}
+
     with open(file_name, 'r') as file:
-        ret = {}
+
         for line in file.readlines():
             if not (line.startswith('*')):
                 line = line.rstrip('\n\r')
                 if len(line) > 0:
-                    pass
+                    info = line.split()
+                    species = info[0] 
+
+                    if 'LL' in line:
+                        long_lived_species[species] = {
+                                'LONG-LIVED' : info[1], 
+                                'O' :  info[2], 
+                                'H' :  info[3], 
+                                'C' :  info[4], 
+                                'S' : info[5], 
+                                'N' : info[6], 
+                                'CL' : info[7], 
+                                'LBOUND' : info[8], 
+                                'VDEP0' : info[9], 
+                                'FIXEDMR' : info[10], 
+                                'SGFLUX' : info[11], 
+                                'DISTH' : info[12], 
+                                'MBOUND' : info[13], 
+                                'SMFLUX' :  info[14], 
+                                'VEFF0' : info[15]
+                                }
+                    elif 'SL' in line:
+                        short_lived_species[species] = {
+                                'SHORT-LIVED' : info[1], 
+                                'O' : info[2],
+                                'H' : info[3],
+                                'C' : info[4],
+                                'S' : info[5],
+                                'N' : info[6],
+                                'CL' : info[7]
+                                }
+                    elif 'IN' in line:
+                        inert_species[species] = {
+                                'INERT-SPECIES' : info[1], 
+                                'O' : info[2],
+                                'H' : info[3],
+                                'C' : info[4],
+                                'S' : info[5],
+                                'N' : info[6],
+                                'CL' : info[7],
+                                'LBOUND': info[8]
+                                }
+                    else:
+                        other_species[species] = {
+                                'other-species' : info[1], 
+                                'O' : info[2],
+                                'H' : info[3],
+                                'C' : info[4],
+                                'S' : info[5],
+                                'N' : info[6],
+                                'CL' : info[7],
+                                }
+
+        return [long_lived_species, short_lived_species, inert_species, other_species] 
+
+
+
+
 
 def species_header():
     return '''

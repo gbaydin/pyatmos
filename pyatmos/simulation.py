@@ -27,13 +27,17 @@ class Simulation():
     def run(self, species, max_photochem_iterations, n_clima_steps=400):
         '''
         Args: 
-            species: dictionary, 
+            species: dictionary of species and concentrations to change them to 
             max_photochem_iterations: int, maximum number of iterations allowed by photochem to test for convergence  
             n_clima_steps: int, number of steps taken by clima (default 400) 
         '''
 
         # modify species file: TODO
         species_file = self._read_container_file('/code/atmos/PHOTOCHEM/INPUTFILES/species.dat')
+
+
+        
+
 
 
 
