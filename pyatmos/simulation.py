@@ -36,7 +36,7 @@ class Simulation():
         self._photochem_duration = None
         self._clima_duration     = None
         self._initialize_time    = pyatmos.util.UTC_now()
-        print('Ready at '+format_datetime(self._initialize_time))
+        print('Initialization complete: '+format_datetime(self._initialize_time))
 
 
     def start(self):
@@ -73,11 +73,12 @@ class Simulation():
         self._photochem_duration = pyatmos.util.UTC_now()
         self._container.exec_run('./Photo.run')
         self._photochem_duration = pyatmos.util.UTC_now() - self._photochem_duration 
-        print('run photo finished')
-        self.debug('photo took '+str(self._photochem_duration)+' seconds')
 
         # check for convergence of photochem   
-        photochem_converged = self.check_photochem_convergence(max_photochem_iterations)
+        [photochem_converged, n_photochem_iterations] = self.check_photochem_convergence(max_photochem_iterations)
+
+        print('run photo finished after {0} iterations'.format(n_photochem_iterations))
+        self.debug('photochem took {0} seconds'.format(self._photochem_duration))
 
         # copy photochem results
         cmd = 'docker cp ' + self._container.name + ':/code/atmos/PHOTOCHEM/OUTPUT/out.out ' + output_directory
@@ -130,7 +131,7 @@ class Simulation():
 
     
             # copy clima output files 
-            cmd = 'docker cp ' + self._container.name + ':/code/atmos/CLIMA/IO/clima_allout.tab /Users/Will/Documents/FDL/results' 
+            cmd = 'docker cp ' + self._container.name + ':/code/atmos/CLIMA/IO/clima_allout.tab ' + output_directory 
             os.system(cmd)
             
             
@@ -194,9 +195,9 @@ class Simulation():
         number_of_iterations = int(last_line.split()[2])
 
         if number_of_iterations < max_photochem_iterations:
-            return True
+            return [True, number_of_iterations]
         else:
-            return False 
+            return [False, number_of_iterations] 
 
     def _write_container_file(self, input_file_name, output_file_name):
         cmd = 'docker cp ' + input_file_name + ' ' + self._container.name + ':' + output_file_name
