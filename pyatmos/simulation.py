@@ -3,21 +3,32 @@ import tempfile
 import os
 #import numpy
 
-
 import pyatmos
 
 def print_list(li):
     for e in li:
         print(e.replace('\n',''))
 
+def format_datetime(unix_timestamp):
+    '''
+    Convert unix timestamp to human readable format
+    Should automatically be in the timezone of the host machine
+    '''
+    import datetime
+    print(unix_timestamp)
+    return datetime.datetime.fromtimestamp(
+        int(unix_timestamp)
+    ).strftime('%Y-%m-%d %H:%M:%S')
+
 class Simulation():
-    def __init__(self, docker_image='registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos'):
+    def __init__(self, docker_image='registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', DEBUG=False):
         self._docker_image = docker_image
         print('Initializing Docker...')
         self._docker_client = docker.from_env()
         print('Pulling latest image... {}'.format(self._docker_image))
         self._docker_client.images.pull(self._docker_image)
         self._container = None
+        self._debug = DEBUG
 
         self._start_time         = None
         self._run_time_start     = None
@@ -25,14 +36,14 @@ class Simulation():
         self._photochem_duration = None
         self._clima_duration     = None
         self._initialize_time    = pyatmos.util.UTC_now()
-        print('Ready.')
+        print('Ready at '+format_datetime(self._initialize_time))
 
 
     def start(self):
         print('Starting Docker container...')
         self._container = self._docker_client.containers.run('registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', detach=True, tty=True)
-        print('Container running {0}.'.format(self._container.name))
         self._start_time = pyatmos.util.UTC_now()
+        print("Container '{0}' running at {1}.".format(self._container.name, format_datetime(self._start_time) ))
 
     def run(self, species_concentrations, max_photochem_iterations, n_clima_steps=400, output_directory='/Users/Will/Documents/FDL/results'):
         '''
@@ -47,17 +58,23 @@ class Simulation():
 
         self._run_time_start = pyatmos.util.UTC_now() 
 
+
+        ################################
         # modify species file, changes the concentrations inside species.dat as specified by species_concentrations
+        ################################
         self.modify_atmospheric_species('/code/atmos/PHOTOCHEM/INPUTFILES/species.dat', species_concentrations) 
         print('Modified species file with:')
         print(species_concentrations)
 
         
-        # run photochem 
+        ################################
+        # Run photochem 
+        ################################
         self._photochem_duration = pyatmos.util.UTC_now()
         self._container.exec_run('./Photo.run')
-        self._photochem_runtime = pyatmos.util.UTC_now() - self._photochem_duration 
+        self._photochem_duration = pyatmos.util.UTC_now() - self._photochem_duration 
         print('run photo finished')
+        self.debug('photo took '+str(self._photochem_duration)+' seconds')
 
         # check for convergence of photochem   
         photochem_converged = self.check_photochem_convergence(max_photochem_iterations)
@@ -105,10 +122,11 @@ class Simulation():
 
             # Run clima 
             print('running clima with {0} steps ...'.format(n_clima_steps))
-            self._photochem_duration = pyatmos.util.UTC_now()
+            self._clima_duration = pyatmos.util.UTC_now()
             self._container.exec_run('./Clima.run')
-            self._photochem_duration = pyatmos.utile.UTC_now() - self._photochem_duration 
+            self._clima_duration = pyatmos.utile.UTC_now() - self._clima_duration 
             print('finished clima')
+            self.debug('Clima took '+str(self._clima_duration)+' seconds')
 
     
             # copy clima output files 
@@ -195,6 +213,10 @@ class Simulation():
         cmd = 'docker cp ' + self._container.name + ':' + container_file_name + ' ' + tmp_file_name
         os.system(cmd)
         return pyatmos.util.read_file(tmp_file_name)
+
+    def debug(self, message):
+        if self._debug: 
+            print('DEBUG: '+message)
 
 
     def _set_container_file(self):
