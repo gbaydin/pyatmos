@@ -15,7 +15,6 @@ def format_datetime(unix_timestamp):
     Should automatically be in the timezone of the host machine
     '''
     import datetime
-    print(unix_timestamp)
     return datetime.datetime.fromtimestamp(
         int(unix_timestamp)
     ).strftime('%Y-%m-%d %H:%M:%S')
@@ -62,7 +61,7 @@ class Simulation():
         ################################
         # modify species file, changes the concentrations inside species.dat as specified by species_concentrations
         ################################
-        self.modify_atmospheric_species('/code/atmos/PHOTOCHEM/INPUTFILES/species.dat', species_concentrations) 
+        self._modify_atmospheric_species('/code/atmos/PHOTOCHEM/INPUTFILES/species.dat', species_concentrations) 
         print('Modified species file with:')
         print(species_concentrations)
 
@@ -75,9 +74,9 @@ class Simulation():
         self._photochem_duration = pyatmos.util.UTC_now() - self._photochem_duration 
 
         # check for convergence of photochem   
-        [photochem_converged, n_photochem_iterations] = self.check_photochem_convergence(max_photochem_iterations)
+        [photochem_converged, n_photochem_iterations] = self._check_photochem_convergence(max_photochem_iterations)
 
-        print('run photo finished after {0} iterations'.format(n_photochem_iterations))
+        print('photochem finished after {0} iterations'.format(n_photochem_iterations))
         self.debug('photochem took {0} seconds'.format(self._photochem_duration))
 
         # copy photochem results
@@ -125,7 +124,7 @@ class Simulation():
             print('running clima with {0} steps ...'.format(n_clima_steps))
             self._clima_duration = pyatmos.util.UTC_now()
             self._container.exec_run('./Clima.run')
-            self._clima_duration = pyatmos.utile.UTC_now() - self._clima_duration 
+            self._clima_duration = pyatmos.util.UTC_now() - self._clima_duration 
             print('finished clima')
             self.debug('Clima took '+str(self._clima_duration)+' seconds')
 
@@ -143,7 +142,7 @@ class Simulation():
 
         return 1 
 
-    def modify_atmospheric_species(self, species_file_name, species_concentrations):
+    def _modify_atmospheric_species(self, species_file_name, species_concentrations):
         '''
         Modify the species file (species_file_name) to find-and-replace the concentrations listed in species_concentrations
         Copies the files out of the docker image, modifies them, and then puts them back 
@@ -174,7 +173,7 @@ class Simulation():
         self._write_container_file(tmp_output_file_name, species_file_name) 
     
 
-    def check_photochem_convergence(self, max_photochem_iterations):
+    def _check_photochem_convergence(self, max_photochem_iterations):
         '''
         Check that photochem has converged, search the output file for N = (number)
         if number < max_photochem_iterations then convergence has been achived 
