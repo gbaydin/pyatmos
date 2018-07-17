@@ -3,6 +3,7 @@ import tempfile
 import os
 #import numpy
 
+
 import pyatmos
 
 def print_list(li):
@@ -17,42 +18,54 @@ class Simulation():
         print('Pulling latest image... {}'.format(self._docker_image))
         self._docker_client.images.pull(self._docker_image)
         self._container = None
+
+        self._start_time         = None
+        self._run_time_start     = None
+        self._run_time_end       = None
+        self._photochem_duration = None
+        self._clima_duration     = None
+        self._initialize_time    = pyatmos.util.UTC_now()
         print('Ready.')
+
 
     def start(self):
         print('Starting Docker container...')
         self._container = self._docker_client.containers.run('registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', detach=True, tty=True)
         print('Container running {0}.'.format(self._container.name))
+        self._start_time = pyatmos.util.UTC_now()
 
-    def run(self, species, max_photochem_iterations, n_clima_steps=400):
+    def run(self, species_concentrations, max_photochem_iterations, n_clima_steps=400, output_directory='/Users/Will/Documents/FDL/results'):
         '''
         Args: 
-            species: dictionary of species and concentrations to change them to 
+            species_concentrations: dictionary of species and concentrations to change them to, formatted as 
+                                    { 'species name' : concentration }
+                                    concentration should be fractional (not a percentage) 
             max_photochem_iterations: int, maximum number of iterations allowed by photochem to test for convergence  
             n_clima_steps: int, number of steps taken by clima (default 400) 
+            output_directory: string, path to the directory to store outputs 
         '''
 
-        # modify species file: TODO
-        species_file = self._read_container_file('/code/atmos/PHOTOCHEM/INPUTFILES/species.dat')
+        self._run_time_start = pyatmos.util.UTC_now() 
 
+        # modify species file, changes the concentrations inside species.dat as specified by species_concentrations
+        self.modify_atmospheric_species('/code/atmos/PHOTOCHEM/INPUTFILES/species.dat', species_concentrations) 
+        print('Modified species file with:')
+        print(species_concentrations)
 
         
-
-
-
-
-
         # run photochem 
+        self._photochem_duration = pyatmos.util.UTC_now()
         self._container.exec_run('./Photo.run')
+        self._photochem_runtime = pyatmos.util.UTC_now() - self._photochem_duration 
         print('run photo finished')
 
         # check for convergence of photochem   
         photochem_converged = self.check_photochem_convergence(max_photochem_iterations)
 
         # copy photochem results
-        cmd = 'docker cp ' + self._container.name + ':/code/atmos/PHOTOCHEM/OUTPUT/out.out /Users/Will/Documents/FDL/results' 
+        cmd = 'docker cp ' + self._container.name + ':/code/atmos/PHOTOCHEM/OUTPUT/out.out ' + output_directory
         os.system(cmd)
-        cmd = 'docker cp ' + self._container.name + ':/code/atmos/PHOTOCHEM/OUTPUT/out.dist /Users/Will/Documents/FDL/results' 
+        cmd = 'docker cp ' + self._container.name + ':/code/atmos/PHOTOCHEM/OUTPUT/out.dist ' + output_directory
         os.system(cmd)
 
 
@@ -92,7 +105,9 @@ class Simulation():
 
             # Run clima 
             print('running clima with {0} steps ...'.format(n_clima_steps))
+            self._photochem_duration = pyatmos.util.UTC_now()
             self._container.exec_run('./Clima.run')
+            self._photochem_duration = pyatmos.utile.UTC_now() - self._photochem_duration 
             print('finished clima')
 
     
@@ -101,14 +116,44 @@ class Simulation():
             os.system(cmd)
             
             
-            return 1 
 
         else:
             print('photochem did not converge before {0} iterations'.format(max_photochem_iterations))
 
-            return 1 
+        self._run_time_end = pyatmos.util.UTC_now()
 
+        return 1 
 
+    def modify_atmospheric_species(self, species_file_name, species_concentrations):
+        '''
+        Modify the species file (species_file_name) to find-and-replace the concentrations listed in species_concentrations
+        Copies the files out of the docker image, modifies them, and then puts them back 
+        Args:
+            species_file_name: string, path to species file inside the docker image
+            species_concentrations: dictionary, containing species' concentrations' to modify
+        '''
+        
+        # Parse existing species file 
+        tmp_input_file_name = tempfile.NamedTemporaryFile().name
+        cmd = 'docker cp ' + self._container.name + ':' + species_file_name + ' ' + tmp_input_file_name
+        os.system(cmd)
+        [long_lived_species, short_lived_species, inert_species, other_species] = pyatmos.modify_species_file.parse_species(tmp_input_file_name)
+
+        # Reswrite species file
+        tmp_output_file_name = tempfile.NamedTemporaryFile().name
+        ofile = open(tmp_output_file_name, 'w')
+        ofile.write( pyatmos.modify_species_file.species_header() ) 
+
+        ofile.write( pyatmos.modify_species_file.write_species_long_lived(long_lived_species,   species_concentrations) )
+        ofile.write( pyatmos.modify_species_file.write_species_short_lived(short_lived_species, species_concentrations) )
+        ofile.write( pyatmos.modify_species_file.write_species_inert(inert_species,             species_concentrations) )
+        ofile.write( pyatmos.modify_species_file.write_species_other(other_species,             species_concentrations) )
+
+        ofile.close() 
+
+        # Over-write the species file 
+        self._write_container_file(tmp_output_file_name, species_file_name) 
+    
 
     def check_photochem_convergence(self, max_photochem_iterations):
         '''
@@ -138,7 +183,6 @@ class Simulation():
     def _write_container_file(self, input_file_name, output_file_name):
         cmd = 'docker cp ' + input_file_name + ' ' + self._container.name + ':' + output_file_name
         os.system(cmd)
-
 
     def _read_container_file(self, container_file_name):
         tmp_file_name = tempfile.NamedTemporaryFile().name
