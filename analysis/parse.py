@@ -17,9 +17,6 @@ def parse_photochem():
     ph_file_name = '/Users/Will/Documents/FDL/results/out.out'
     ph_file = open(ph_file_name, 'r')
 
-    o_file_name = '/Users/Will/Documents/FDL/results/parsed_photochem.csv'
-    o_file = open(o_file_name, 'w')
-
     flux_tables = [] 
     all_tables = [] 
 
@@ -149,8 +146,13 @@ def parse_photochem():
     ########################
     # concatenate tables, write to output CSV
     ########################
-    concatenate_tables(flux_tables)
-    concatenate_tables(mix_tables)
+    final_flux_table = concatenate_tables(flux_tables)
+    final_mix_table = concatenate_tables(mix_tables)
+
+    final_flux_table.to_csv('/Users/Will/Documents/FDL/results/parsed_photochem_fluxes.csv')
+    final_mix_table.to_csv('/Users/Will/Documents/FDL/results/parsed_photochem_mixing_ratios.csv')
+
+
 
 
 def check_float_conversion(li):
@@ -171,7 +173,12 @@ def check_float_conversion(li):
             sign = None
             if '-' in element: 
                 sign = '-'
+                # could be negative
                 tokens = element.split('-')
+                if len(tokens) > 2:
+                    tokens = ['-'+tokens[1], tokens[2]]
+                #print(element, tokens)
+
             if '+' in element:
                 sign = '+'
                 tokens = element.split('+')

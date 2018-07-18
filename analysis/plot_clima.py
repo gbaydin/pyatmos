@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
 
+from Axis import Axis
 import pandas as pd 
 import matplotlib.pyplot as plt
-
-class Axis():
-    def __init__(self, index, title, units):
-        self.index = index
-        self.title = title
-        self.units = units
-        self.funits = '{0} [{1}]'.format(self.title, self.units)
-
 
 def main():
 
@@ -28,16 +21,15 @@ def main():
     plot_clima_profile(clima_dataframe, xaxis=temperature, yaxis=altitude) 
     #print(clima_dataframe)
     
-def plot_clima_profile(clima, xaxis, yaxis):
+def plot_clima_profile(dataframe, xaxis, yaxis):
 
     plt.xlabel(xaxis.funits)
     plt.ylabel(yaxis.funits)
-    plt.scatter(clima[xaxis.index], clima[yaxis.index]) 
+    plt.scatter(dataframe[xaxis.index], dataframe[yaxis.index]) 
     plt.xscale('log')
 
-    print('show...')
     plt.savefig('{0}_{1}.pdf'.format(xaxis.title, yaxis.title))
-    #plt.clf()
+    plt.clf()
 
 
 
