@@ -4,18 +4,25 @@ import pandas as pd
 '''
 Script to parse the tables produced by clima
 Reads the text-based format and converts the inital and final tables into separate CSV files
+
+Example usage 
+python parse.py -o /Users/Will/Documents/FDL/results/google_cloud -c /Users/Will/Documents/FDL/results/google_cloud/clima_allout.tab -p /Users/Will/Documents/FDL/results/google_cloud/out.out 
+
 '''
 
-def main():
-
-    #parse_clima()
-    parse_photochem()
+def main(output_directory, clima_input, photochem_input, debug):
 
 
-def parse_photochem():
+    print('Will write to '+output_directory)
+    print('Reading '+clima_input)
+    parse_clima(input_file = clima_input,         output_directory = output_directory, debug=debug )
+    print('Reading '+photochem_input)
+    parse_photochem(input_file = photochem_input, output_directory = output_directory, debug=debug )
 
-    ph_file_name = '/Users/Will/Documents/FDL/results/out.out'
-    ph_file = open(ph_file_name, 'r')
+
+def parse_photochem(input_file, output_directory, debug):
+
+    ph_file = open(input_file, 'r')
 
     flux_tables = [] 
     all_tables = [] 
@@ -92,7 +99,7 @@ def parse_photochem():
     ###################
 
     # open file again and re-read
-    ph_file = open(ph_file_name, 'r')
+    ph_file = open(input_file, 'r')
     line_number = 0
     capture_mixratio = False 
     tptl_line_number = -999 
@@ -146,11 +153,15 @@ def parse_photochem():
     ########################
     # concatenate tables, write to output CSV
     ########################
+    if debug: print('flux tables: ', len(flux_tables))
     final_flux_table = concatenate_tables(flux_tables)
+    if debug: print('mixing ratio tables: ', len(mix_tables))
     final_mix_table = concatenate_tables(mix_tables)
 
-    final_flux_table.to_csv('/Users/Will/Documents/FDL/results/parsed_photochem_fluxes.csv')
-    final_mix_table.to_csv('/Users/Will/Documents/FDL/results/parsed_photochem_mixing_ratios.csv')
+    final_flux_table.to_csv(output_directory+'/parsed_photochem_fluxes.csv')
+    print('Writing', output_directory+'/parsed_photochem_fluxes.csv')
+    final_mix_table.to_csv(output_directory+'/parsed_photochem_mixing_ratios.csv')
+    print('Writing', output_directory+'/parsed_photochem_mixing_ratios.csv')
 
 
 
@@ -233,16 +244,15 @@ def table_to_dataframe(table):
     '''
 
 
-def parse_clima():
+def parse_clima(input_file, output_directory, debug):
 
     # Define the "boxing" used in the clima output file
     binding = "J     P         ALT         T        CONVEC       DT          TOLD        FH20       FSAVE        FO3        TCOOL       THEAT"
     
-    cfile_name = '/Users/Will/Documents/FDL/results/clima_allout.tab' 
-    cfile = open(cfile_name, 'r')
+    cfile = open(input_file, 'r')
     
-    ofile1 = open('/Users/Will/Documents/FDL/results/parsed_clima_initial.csv', 'w')
-    ofile2 = open('/Users/Will/Documents/FDL/results/parsed_clima_final.csv', 'w')
+    ofile1 = open(output_directory+'/parsed_clima_initial.csv', 'w')
+    ofile2 = open(output_directory+'/parsed_clima_final.csv', 'w')
     
     unused_lines = [] 
     capture = False
@@ -268,5 +278,17 @@ def parse_clima():
     ofile1.close()
     ofile2.close()
 
+    if debug: print('parse_clima finished')
+
 if __name__ == "__main__": 
-    main()
+
+    from optparse import OptionParser
+    parser = OptionParser()
+    parser.add_option("-o", "--output_directory", action="store", type="string", help="Parsed input clima file")
+    parser.add_option("-p", "--photochem_input", action="store", type="string", help="Parsed input clima file")
+    parser.add_option("-c", "--clima_input", action="store", type="string", help="Parsed input clima file")
+    parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False, help="print debug messages")
+
+    options, args = parser.parse_args()
+    option_dict = dict( (k, v) for k, v in vars(options).items() if v is not None)
+    main(**option_dict)

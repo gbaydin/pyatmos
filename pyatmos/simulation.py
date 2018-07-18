@@ -46,6 +46,12 @@ class Simulation():
 
     def run(self, species_concentrations, max_photochem_iterations, n_clima_steps=400, output_directory='/Users/Will/Documents/FDL/results'):
         '''
+        Configures and runs ATMOS, then collects the output.  
+        - Modifes species file with custom concentrations (supplied via species_concentrations) 
+        - Runs the photochemical model and checks for convergence in max_photochem_iterations steps 
+        - If converged, then runs the clima model. First modifies the clima input file with n_clima_steps   
+        - copies the results files to output_directory 
+
         Args: 
             species_concentrations: dictionary of species and concentrations to change them to, formatted as 
                                     { 'species name' : concentration }
@@ -86,7 +92,6 @@ class Simulation():
         os.system(cmd)
 
 
-
         ################################
         # if photochem converged, run clima
         ################################
@@ -109,16 +114,13 @@ class Simulation():
             self._write_container_file(tmp_file_name, '/code/atmos/CLIMA/IO/input_clima.dat')
 
 
-            
             ################################
             #To help with convergence, potentially replace /CLIMA/IO/TempIn.dat with /CLIMA/IO/TempOut.dat
             #Also set IUP=       0 in /CLIMA/IO/input_clima.dat
             ################################
 
-
             self._container.exec_run("cp  /code/atmos/CLIMA/IO/TempOut.dat /code/atmos/CLIMA/IO/TempIn.dat")
             self._container.exec_run("sed -i 's/IUP=       1/IUP=       0/g' /code/atmos/CLIMA/IO/input_clima.dat")
-
 
             # Run clima 
             print('running clima with {0} steps ...'.format(n_clima_steps))
@@ -127,13 +129,10 @@ class Simulation():
             self._clima_duration = pyatmos.util.UTC_now() - self._clima_duration 
             print('finished clima')
             self.debug('Clima took '+str(self._clima_duration)+' seconds')
-
     
             # copy clima output files 
             cmd = 'docker cp ' + self._container.name + ':/code/atmos/CLIMA/IO/clima_allout.tab ' + output_directory 
             os.system(cmd)
-            
-            
 
         else:
             print('photochem did not converge before {0} iterations'.format(max_photochem_iterations))
