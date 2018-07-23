@@ -20,7 +20,8 @@ def format_datetime(unix_timestamp):
     ).strftime('%Y-%m-%d %H:%M:%S')
 
 class Simulation():
-    def __init__(self, docker_image='registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', DEBUG=False):
+    def __init__(self, docker_image='registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', DEBUG=False, gcs_bucket=None):
+
         self._docker_image = docker_image
         print('Initializing Docker...')
         self._docker_client = docker.from_env()
@@ -29,6 +30,13 @@ class Simulation():
         self._container = None
         self._debug = DEBUG
 
+        # 
+        if not gcs_bucket is None:
+            self._gcs_enabled = True 
+        else:
+            self._gcs_enabled = False 
+
+        # metadata for runtime 
         self._start_time         = None
         self._run_time_start     = None
         self._run_time_end       = None

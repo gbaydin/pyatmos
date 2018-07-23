@@ -17,6 +17,8 @@ class Axis():
                 'CH4' : 'CH$_4$',
                 'H2' : 'H$_2$',
                 'H2O' : 'H$_2$O',
+                'O3' : 'O$_3$',
+                'N2' : 'N$_2$',
                 }
         try:
             return label_dict[self.index]

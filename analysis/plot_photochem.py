@@ -3,6 +3,7 @@
 from Axis import Axis 
 import pandas as pd 
 import matplotlib.pyplot as plt
+import numpy as np
 
 pressure = Axis('P', 'Pressure', 'bar')
 altitude = Axis('Z', 'Altitude', 'km')
@@ -20,11 +21,22 @@ def main(input_file):
     mix_dataframe  = pd.read_csv(mix_path) 
     
     # convert cm to km
-    mix_dataframe['Z'] = mix_dataframe['Z']/1000000
-    flux_dataframe['Z'] = flux_dataframe['Z']/1000000
+    mix_dataframe['Z'] = mix_dataframe['Z']/1e5
+    flux_dataframe['Z'] = flux_dataframe['Z']/1e5 
 
+    sum_fluxes(flux_dataframe, [])
     plot_mixing_ratios(mix_dataframe)
     plot_fluxes(flux_dataframe) 
+
+#_____________________________________________________________________________
+def sum_fluxes(df, gases):
+    '''
+
+    '''
+    for col in df:
+        print("{0} \t {1:.2E}".format(col, np.sum(df[col])))
+
+
 
 #_____________________________________________________________________________
 def find_set_minimum(df, columns):
@@ -47,7 +59,10 @@ def find_set_maximum(df, columns):
 def plot_fluxes(df):
     
     # find min/max of a set of c
-    gases = ['CH4', 'CO', 'O2', 'H2']
+    gases = ['CH4', 'CO', 'O2', 'H2', 'O', 'O3']
+    gases = ['CO', 'O2', 'H2O', 'H2']
+    gases = ['O2']
+    gases = ['CH4']
 
     maximum = find_set_maximum(df, gases)
     minimum = find_set_minimum(df, gases)
@@ -59,8 +74,13 @@ def plot_fluxes(df):
 
     plt.legend()
     plt.xlim(xmin=minimum, xmax=maximum)
-    #plt.xscale('log')
     plt.savefig('fluxes.pdf')
+
+    plt.xscale('symlog')
+    plt.savefig('fluxes_symlog.pdf')
+
+    plt.xscale('log')
+    plt.savefig('fluxes_log.pdf')
 
     # clear plot 
     plt.clf()
@@ -71,6 +91,8 @@ def plot_mixing_ratios(df):
 
 
     gases = ['CH4', 'CO', 'O2', 'H2']
+    gases = ['CO', 'O2', 'H2O', 'H2']
+    gases = ['O2']
     maximum = find_set_maximum(df, gases)
     minimum = find_set_minimum(df, gases)
     print(minimum, maximum)
@@ -80,8 +102,9 @@ def plot_mixing_ratios(df):
         plot_profile(df, gas, altitude) 
     plt.legend()
     plt.xlim(xmin=minimum, xmax=maximum)
-    plt.xscale('log')
     plt.savefig('mixing_ratios.pdf')
+    plt.xscale('log')
+    plt.savefig('mixing_ratios_log.pdf')
 
     # clear plot 
     plt.clf()
