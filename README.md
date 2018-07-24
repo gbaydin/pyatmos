@@ -16,6 +16,12 @@ The Python package pulls the latest Docker image for atmos from the FDL GitLab r
 
 ### Prerequisites
 * Install [Docker CE](https://www.docker.com/community-edition) for your system
+* Make sure python and pip are installed:
+
+    sudo apt update
+    sudo apt install python python-dev python3 python3-dev
+    wget https://bootstrap.pypa.io/get-pip.py
+    sudo python get-pip.py
 
 ### Install the package
 
