@@ -17,7 +17,7 @@ The Python package pulls the latest Docker image for atmos from the FDL GitLab r
 
 
 ### Prerequisites
-* Make sure python and pip are installed:
+Make sure python and pip are installed:
 
     sudo apt update
     sudo apt install python python-dev python3 python3-dev
@@ -25,7 +25,7 @@ The Python package pulls the latest Docker image for atmos from the FDL GitLab r
     sudo python get-pip.py
 
 
-* Make sure docker is installed:
+Make sure docker is installed:
     
     # install docker, either install [Docker CE](https://www.docker.com/community-edition) for your system
     # or, from the command line:  
@@ -34,7 +34,7 @@ The Python package pulls the latest Docker image for atmos from the FDL GitLab r
     # You may need to add yourself to the "docker group" so you have the correct permissions 
     sudo usermod -a -G docker $USER 
 
-    # Test that you can access docker
+    # Test that you can access docker (you may need to restart the machine first if this does not work)
     docker run hello-world
 
 ### Install the package
