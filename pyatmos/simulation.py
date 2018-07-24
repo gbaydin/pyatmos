@@ -30,7 +30,7 @@ class Simulation():
         self._container = None
         self._debug = DEBUG
 
-        # 
+        # test if GCS bucket is enabled  
         if not gcs_bucket is None:
             self._gcs_enabled = True 
         else:
@@ -52,7 +52,7 @@ class Simulation():
         self._start_time = pyatmos.util.UTC_now()
         print("Container '{0}' running at {1}.".format(self._container.name, format_datetime(self._start_time) ))
 
-    def run(self, species_concentrations, max_photochem_iterations, n_clima_steps=400, output_directory='/Users/Will/Documents/FDL/results'):
+    def run(self, species_concentrations={}, max_photochem_iterations=10000, n_clima_steps=500, output_directory='/Users/Will/Documents/FDL/results'):
         '''
         Configures and runs ATMOS, then collects the output.  
         - Modifes species file with custom concentrations (supplied via species_concentrations) 
@@ -89,13 +89,17 @@ class Simulation():
 
         # check for convergence of photochem   
         [photochem_converged, n_photochem_iterations] = self._check_photochem_convergence(max_photochem_iterations)
+        if not photochem_converged:
+            return 'photochem_error'
 
         print('photochem finished after {0} iterations'.format(n_photochem_iterations))
         self.debug('photochem took {0} seconds'.format(self._photochem_duration))
 
         # copy photochem results
+        #photochem_out_out = output_directory + '/out.out'
         cmd = 'docker cp ' + self._container.name + ':/code/atmos/PHOTOCHEM/OUTPUT/out.out ' + output_directory
         os.system(cmd)
+        #photochem_out_dist = output_directory + '/out.dist'
         cmd = 'docker cp ' + self._container.name + ':/code/atmos/PHOTOCHEM/OUTPUT/out.dist ' + output_directory
         os.system(cmd)
 
@@ -142,12 +146,15 @@ class Simulation():
             cmd = 'docker cp ' + self._container.name + ':/code/atmos/CLIMA/IO/clima_allout.tab ' + output_directory 
             os.system(cmd)
 
+            if not clima_converged:
+                return 'clima_error' 
+
         else:
             print('photochem did not converge before {0} iterations'.format(max_photochem_iterations))
 
         self._run_time_end = pyatmos.util.UTC_now()
 
-        return 1 
+        return 'success' 
 
     def _modify_atmospheric_species(self, species_file_name, species_concentrations):
         '''

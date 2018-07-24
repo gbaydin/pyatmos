@@ -3,6 +3,7 @@ Script to test IO with gcs buckets
 '''
 
 from google.cloud import storage 
+import os
 
 
 def main():
@@ -23,7 +24,7 @@ def main():
         print(' ' + f.name)
 
     # get new blob object 
-    blob = gcs_bucket.blob('new_file.txt')
+    blob = gcs_bucket.blob('tempdir/new_file.txt')
     print(blob)
 
     # load a new file into the blob 
@@ -37,7 +38,10 @@ def main():
     to_write ='this is a \n nice string \n with some text'
     blob.upload_from_string(to_write)
 
-    # create a new file 
+    # move a file from current machine to somewhere 
+    os.system('gsutil mv <file> gs://bucket-name/path') 
+
+    # read a file from GSC 
 
 
 
