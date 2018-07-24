@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 #RUN ATMOSDIR=/atmos/code/
 
-RUN mkdir /code/ && cd /code/ && git clone https://github.com/VirtualPlanetaryLaboratory/atmos.git
+# RUN mkdir /code/ && cd /code/ && git clone https://github.com/VirtualPlanetaryLaboratory/atmos.git
+RUN mkdir /code/ && cd /code/ && git clone https://gitlab.com/frontierdevelopmentlab/astrobiology/atmos.git
 #COPY input_clima.dat /code/atmos/CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat
 
 RUN cp /code/atmos/PHOTOCHEM/INPUTFILES/TEMPLATES/ModernEarth/in.dist  /code/atmos/PHOTOCHEM/in.dist
