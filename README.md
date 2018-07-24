@@ -2,11 +2,8 @@
 
 A Docker image for [Atmos](https://github.com/VirtualPlanetaryLaboratory/atmos) and a Python package for interacting with Atmos, for NASA FDL 2018 astrobiology challenges.
 
-Initial work by Adam Cobb and Atilim Gunes Baydin.
+Initial work by Adam Cobb and Atilim Gunes Baydin. Further development by William Fawcett. 
 
-Work in progress. Documentation to follow soon.
-
-![screenshot](https://gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos/raw/master/screenshot.png)
 
 ## How to install
 
@@ -44,3 +41,9 @@ git clone git@gitlab.com:frontierdevelopmentlab/astrobiology/pyatmos.git
 cd pyatmos
 pip install -e .
 ```
+
+
+
+Work in progress. Documentation to follow soon
+
+![screenshot](https://gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos/raw/master/screenshot.png)
