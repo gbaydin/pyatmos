@@ -131,14 +131,12 @@ class Simulation():
         # copy photochem results
         ################################
 
-        #photochem_out_out = output_directory + '/out.out'
-        cmd = 'docker cp ' + self._container.name + ':/code/atmos/PHOTOCHEM/OUTPUT/out.out ' + output_directory
-        os.system(cmd)
-        #photochem_out_dist = output_directory + '/out.dist'
-        cmd = 'docker cp ' + self._container.name + ':/code/atmos/PHOTOCHEM/OUTPUT/out.dist ' + output_directory
-        os.system(cmd)
+        self._copy_container_file('/code/atmos/PHOTOCHEM/OUTPUT/out.out', output_directory)
+        self._copy_container_file('/code/atmos/PHOTOCHEM/OUTPUT/out.dist', output_directory) 
+        self._copy_container_file('/code/atmos/PHOTOCHEM/INPUTFILES/species.dat', output_directory)
+        self._copy_container_file('/code/atmos/PHOTOCHEM/in.dist', output_directory) 
 
-        # copy photochem results ready for the next run
+        # copy photochem results inside the docker image, ready for the next run of photochem 
         self._container.exec_run("cp  /code/atmos/PHOTOCHEM/OUTPUT/out.dist /code/atmos/PHOTOCHEM/in.dist")
 
         return True 
@@ -255,20 +253,45 @@ class Simulation():
 
     #_________________________________________________________________________
     def _write_container_file(self, input_file_name, output_file_name):
+        '''
+        Copies a file INTO of docker image 
+        Args:
+            input_file_name: string, path of file on local filesystem
+            output_file_name: string, path of file inside docker image
+        '''
         cmd = 'docker cp ' + input_file_name + ' ' + self._container.name + ':' + output_file_name
+        self.debug(cmd)
         os.system(cmd)
+
+    #_________________________________________________________________________
+    def _copy_container_file(self, input_file_name, output_path):
+        '''
+        Copies a file OUT of the docker image
+        Args:
+            input_file_name: string, path of file inside the docker image
+            output_path: string, destination path (or directory) of file 
+        '''
+        cmd = 'docker cp ' + self._container.name +':'+input_file_name + ' ' + output_path  
+        self.debug(cmd)
+        os.system(cmd) 
+
 
     #_________________________________________________________________________
     def _read_container_file(self, container_file_name):
         tmp_file_name = tempfile.NamedTemporaryFile().name
         cmd = 'docker cp ' + self._container.name + ':' + container_file_name + ' ' + tmp_file_name
+        self.debug(cmd)
         os.system(cmd)
         return pyatmos.util.strings_file(tmp_file_name)
 
     #_________________________________________________________________________
     def _get_container_file(self, container_file_name):
+        '''
+        Copies a file OUT of the docker image to a temp file, and then returns the string of at file  
+        '''
         tmp_file_name = tempfile.NamedTemporaryFile().name
         cmd = 'docker cp ' + self._container.name + ':' + container_file_name + ' ' + tmp_file_name
+        self.debug(cmd)
         os.system(cmd)
         return pyatmos.util.read_file(tmp_file_name)
 
