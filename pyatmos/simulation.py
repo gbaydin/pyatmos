@@ -5,10 +5,12 @@ import os
 
 import pyatmos
 
+#_________________________________________________________________________
 def print_list(li):
     for e in li:
         print(e.replace('\n',''))
 
+#_________________________________________________________________________
 def format_datetime(unix_timestamp):
     '''
     Convert unix timestamp to human readable format
@@ -18,6 +20,7 @@ def format_datetime(unix_timestamp):
     return datetime.datetime.fromtimestamp(
         int(unix_timestamp)
     ).strftime('%Y-%m-%d %H:%M:%S')
+
 
 class Simulation():
     def __init__(self, docker_image='registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', DEBUG=False, gcs_bucket=None):
@@ -46,12 +49,14 @@ class Simulation():
         print('Initialization complete: '+format_datetime(self._initialize_time))
 
 
+    #_________________________________________________________________________
     def start(self):
         print('Starting Docker container...')
         self._container = self._docker_client.containers.run('registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', detach=True, tty=True)
         self._start_time = pyatmos.util.UTC_now()
         print("Container '{0}' running at {1}.".format(self._container.name, format_datetime(self._start_time) ))
 
+    #_________________________________________________________________________
     def run(self, species_concentrations={}, max_photochem_iterations=10000, n_clima_steps=500, output_directory='/Users/Will/Documents/FDL/results'):
         '''
         Configures and runs ATMOS, then collects the output.  
@@ -71,6 +76,32 @@ class Simulation():
 
         self._run_time_start = pyatmos.util.UTC_now() 
 
+        # run the photochemical model 
+        photochem_converged = self._run_photochem(species_concentrations, max_photochem_iterations, output_directory)
+
+        # if photochem didn't converge, exit 
+        if not photochem_converged: 
+            return 'photochem_error' 
+        else:
+            print('photochem converged')
+
+        # run clima  
+        clima_converged = self._run_clima(n_clima_steps, output_directory)
+
+        if not clima_converged:
+            return 'clima_error'
+        else:
+            print('clima converged')
+
+        self._run_time_end = pyatmos.util.UTC_now()
+        return 'success' 
+
+
+    #_________________________________________________________________________
+    def _run_photochem(self, species_concentrations, max_photochem_iterations, output_directory):
+        '''
+        Function to actually run the photochemical model, copies the results once finished 
+        '''
 
         ################################
         # modify species file, changes the concentrations inside species.dat as specified by species_concentrations
@@ -90,12 +121,16 @@ class Simulation():
         # check for convergence of photochem   
         [photochem_converged, n_photochem_iterations] = self._check_photochem_convergence(max_photochem_iterations)
         if not photochem_converged:
-            return 'photochem_error'
+            return False
 
         print('photochem finished after {0} iterations'.format(n_photochem_iterations))
         self.debug('photochem took {0} seconds'.format(self._photochem_duration))
 
+
+        ################################
         # copy photochem results
+        ################################
+
         #photochem_out_out = output_directory + '/out.out'
         cmd = 'docker cp ' + self._container.name + ':/code/atmos/PHOTOCHEM/OUTPUT/out.out ' + output_directory
         os.system(cmd)
@@ -103,59 +138,64 @@ class Simulation():
         cmd = 'docker cp ' + self._container.name + ':/code/atmos/PHOTOCHEM/OUTPUT/out.dist ' + output_directory
         os.system(cmd)
 
+        # copy photochem results ready for the next run
+        self._container.exec_run("cp  /code/atmos/PHOTOCHEM/OUTPUT/out.dist /code/atmos/PHOTOCHEM/in.dist")
+
+        return True 
+
+    #_________________________________________________________________________
+    def _run_clima(self, n_clima_steps, output_directory):
+
+
+        # Modify CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat to change NSTEPS parameter 
+        clima_input = self._read_container_file('/code/atmos/CLIMA/IO/input_clima.dat')
+        replacement_clima = [] 
+        for line in clima_input:
+            if 'NSTEPS=' in line:
+                line = 'NSTEPS=    {0}           !step number (200 recommended for coupling)\n'.format(n_clima_steps)
+            replacement_clima.append(line)
+        tmp_file_name = tempfile.NamedTemporaryFile().name
+        tmp_file = open(tmp_file_name, 'w')
+        for l in replacement_clima:
+            tmp_file.write(l)
+        tmp_file.close() # VERY important to close the file!! 
+        self._write_container_file(tmp_file_name, '/code/atmos/CLIMA/IO/input_clima.dat')
+
 
         ################################
-        # if photochem converged, run clima
+        #To help with convergence, potentially replace /CLIMA/IO/TempIn.dat with /CLIMA/IO/TempOut.dat
+        #Also set IUP=       0 in /CLIMA/IO/input_clima.dat
         ################################
 
-        if photochem_converged: 
-            print('photochem converged')
+        self._container.exec_run("cp  /code/atmos/CLIMA/IO/TempOut.dat /code/atmos/CLIMA/IO/TempIn.dat")
+        self._container.exec_run("sed -i 's/IUP=       1/IUP=       0/g' /code/atmos/CLIMA/IO/input_clima.dat")
 
-            # Modify CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat to change NSTEPS parameter 
-            clima_input = self._read_container_file('/code/atmos/CLIMA/IO/input_clima.dat')
-            replacement_clima = [] 
-            for line in clima_input:
-                if 'NSTEPS=' in line:
-                    line = 'NSTEPS=    {0}           !step number (200 recommended for coupling)\n'.format(n_clima_steps)
-                replacement_clima.append(line)
-            tmp_file_name = tempfile.NamedTemporaryFile().name
-            tmp_file = open(tmp_file_name, 'w')
-            for l in replacement_clima:
-                tmp_file.write(l)
-            tmp_file.close() # VERY important to close the file!! 
-            self._write_container_file(tmp_file_name, '/code/atmos/CLIMA/IO/input_clima.dat')
+        # Run clima 
+        print('running clima with {0} steps ...'.format(n_clima_steps))
+        self._clima_duration = pyatmos.util.UTC_now()
+        self._container.exec_run('./Clima.run')
+        self._clima_duration = pyatmos.util.UTC_now() - self._clima_duration 
+        print('finished clima')
+        self.debug('Clima took '+str(self._clima_duration)+' seconds')
+
+        # copy clima output files 
+        cmd = 'docker cp ' + self._container.name + ':/code/atmos/CLIMA/IO/clima_allout.tab ' + output_directory 
+        os.system(cmd)
+
+        return True 
 
 
-            ################################
-            #To help with convergence, potentially replace /CLIMA/IO/TempIn.dat with /CLIMA/IO/TempOut.dat
-            #Also set IUP=       0 in /CLIMA/IO/input_clima.dat
-            ################################
+    #_________________________________________________________________________
+    def print_run_metadata(self):
+        '''
+        Prints metadata from the previous call of run 
+        '''
+        print('Photochem duration {0}'.format(self._photochem_duration))
+        print('Clima duration {0}'.format(self._clima_duration))
 
-            self._container.exec_run("cp  /code/atmos/CLIMA/IO/TempOut.dat /code/atmos/CLIMA/IO/TempIn.dat")
-            self._container.exec_run("sed -i 's/IUP=       1/IUP=       0/g' /code/atmos/CLIMA/IO/input_clima.dat")
 
-            # Run clima 
-            print('running clima with {0} steps ...'.format(n_clima_steps))
-            self._clima_duration = pyatmos.util.UTC_now()
-            self._container.exec_run('./Clima.run')
-            self._clima_duration = pyatmos.util.UTC_now() - self._clima_duration 
-            print('finished clima')
-            self.debug('Clima took '+str(self._clima_duration)+' seconds')
-    
-            # copy clima output files 
-            cmd = 'docker cp ' + self._container.name + ':/code/atmos/CLIMA/IO/clima_allout.tab ' + output_directory 
-            os.system(cmd)
 
-            if not clima_converged:
-                return 'clima_error' 
-
-        else:
-            print('photochem did not converge before {0} iterations'.format(max_photochem_iterations))
-
-        self._run_time_end = pyatmos.util.UTC_now()
-
-        return 'success' 
-
+    #_________________________________________________________________________
     def _modify_atmospheric_species(self, species_file_name, species_concentrations):
         '''
         Modify the species file (species_file_name) to find-and-replace the concentrations listed in species_concentrations
@@ -187,6 +227,7 @@ class Simulation():
         self._write_container_file(tmp_output_file_name, species_file_name) 
     
 
+    #_________________________________________________________________________
     def _check_photochem_convergence(self, max_photochem_iterations):
         '''
         Check that photochem has converged, search the output file for N = (number)
@@ -212,27 +253,32 @@ class Simulation():
         else:
             return [False, number_of_iterations] 
 
+    #_________________________________________________________________________
     def _write_container_file(self, input_file_name, output_file_name):
         cmd = 'docker cp ' + input_file_name + ' ' + self._container.name + ':' + output_file_name
         os.system(cmd)
 
+    #_________________________________________________________________________
     def _read_container_file(self, container_file_name):
         tmp_file_name = tempfile.NamedTemporaryFile().name
         cmd = 'docker cp ' + self._container.name + ':' + container_file_name + ' ' + tmp_file_name
         os.system(cmd)
         return pyatmos.util.strings_file(tmp_file_name)
 
+    #_________________________________________________________________________
     def _get_container_file(self, container_file_name):
         tmp_file_name = tempfile.NamedTemporaryFile().name
         cmd = 'docker cp ' + self._container.name + ':' + container_file_name + ' ' + tmp_file_name
         os.system(cmd)
         return pyatmos.util.read_file(tmp_file_name)
 
+    #_________________________________________________________________________
     def debug(self, message):
         if self._debug: 
             print('DEBUG: '+message)
 
 
+    #_________________________________________________________________________
     def _set_container_file(self):
         # todo 
         pass
@@ -254,15 +300,19 @@ class Simulation():
 
     '''
 
+    #_________________________________________________________________________
     def __enter__(self):
         return self
 
+    #_________________________________________________________________________
     def __exit__(self, exception_type, exception_value, traceback):
         self.close()
 
+    #_________________________________________________________________________
     def __del__(self):
         self.close()
 
+    #_________________________________________________________________________
     def close(self):
         print('Exiting...')
         if self._container is not None:
