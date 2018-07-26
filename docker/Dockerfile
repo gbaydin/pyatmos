@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 #RUN ATMOSDIR=/atmos/code/
 
-# RUN mkdir /code/ && cd /code/ && git clone https://github.com/VirtualPlanetaryLaboratory/atmos.git
+#RUN mkdir /code/ && cd /code/ && git clone https://github.com/VirtualPlanetaryLaboratory/atmos.git
 RUN mkdir /code/ && cd /code/ && git clone https://gitlab.com/frontierdevelopmentlab/astrobiology/atmos.git
 #COPY input_clima.dat /code/atmos/CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat
 
@@ -25,15 +25,14 @@ RUN cd /code/atmos && make -f PhotoMake
 
 RUN cd /code/atmos && ./Photo.run
 
+#RUN cat /code/atmos/PHOTOCHEM/OUTPUT/out.out
+
 #(this includes NSTEPS=    (number))
 RUN cp /code/atmos/CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat  /code/atmos/CLIMA/IO 
 
 RUN cd /code/atmos && make -f ClimaMake
 
 RUN cd /code/atmos && ./Clima.run
-
-
-
 
 #COPY pyatmos_coupled_init.sh /code/atmos/
 #COPY pyatmos_coupled_iterate.sh /code/atmos/
