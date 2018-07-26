@@ -25,7 +25,7 @@ setup(
     name=PACKAGE_NAME,
     version=read_package_variable('__version__'),
     description='A Python package for interacting with Atmos, for NASA FDL 2018 astrobiology challenges',
-    author='Atilim Gunes Baydin and Adam Cobb',
+    author='Atilim Gunes Baydin and Adam Cobb and William Fawcett',
     author_email='gunes@robots.ox.ac.uk',
     packages=find_packages(),
     install_requires=['docker==3.4.0'],
