@@ -42,7 +42,25 @@ cd pyatmos
 pip install -e .
 ```
 
-### Docker on GCS
+### Docker on google cloud
+
+Setup the docker image on the google cloud:
+
+    # build the docker image, tag it, and upload to repository 
+    gcloud builds submit --tag gcr.io/i-agility-205814/pyatmos .
+
+    # you may need to authenticate, if so, do 
+    gcloud auth configure-docker
+    gcloud auth login
+  
+
+
+
+
+## Auxiliary information
+
+### Seting up docker on google cloud 
+
 To upload your docker image to the google cloud, create your docker file as normal and build it. In this example the docker image will be called quickstart-image:
     
     # build the docker image 
@@ -60,6 +78,7 @@ Since this is a test, you can delete the docker image:
 
     gcloud container images delete gcr.io/i-agility-205814/quickstart-image:tag1 --force-delete-tags
 
+### Other 
 
 Work in progress. Documentation to follow soon
 
