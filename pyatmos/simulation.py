@@ -72,7 +72,7 @@ class Simulation():
 
         Args: 
             species_concentrations: dictionary of species and concentrations to change them to, formatted as 
-                                    { 'species name' : concentration }
+                                    { 'species name' : concentration (float) }
                                     concentration should be fractional (not a percentage) 
             max_photochem_iterations: int, maximum number of iterations allowed by photochem to test for convergence  
             n_clima_steps: int, number of steps taken by clima (default 400) 
@@ -189,9 +189,8 @@ class Simulation():
         print('finished clima')
         self.debug('Clima took '+str(self._clima_duration)+' seconds')
 
-        # copy clima output files 
-        cmd = 'docker cp ' + self._container.name + ':/code/atmos/CLIMA/IO/clima_allout.tab ' + output_directory 
-        os.system(cmd)
+        # copy clima output files out of docker image  
+        self._copy_container_file('/code/atmos/CLIMA/IO/clima_allout.tab', output_directory)
 
         return True 
 
@@ -218,8 +217,7 @@ class Simulation():
         
         # Parse existing species file 
         tmp_input_file_name = tempfile.NamedTemporaryFile().name
-        cmd = 'docker cp ' + self._container.name + ':' + species_file_name + ' ' + tmp_input_file_name
-        os.system(cmd)
+        self._copy_container_file( species_file_name, tmp_input_file_name )
         [long_lived_species, short_lived_species, inert_species, other_species] = pyatmos.modify_species_file.parse_species(tmp_input_file_name)
 
         # Reswrite species file
@@ -249,8 +247,8 @@ class Simulation():
 
         #output = self._container.exec_run("grep 'N =' /code/atmos/PHOTOCHEM/OUTPUT/out.out")
         output = self._read_container_file('/code/atmos/PHOTOCHEM/OUTPUT/out.out')
-        print('output\n')
-        print(output)
+        #print('output\n')
+        #print(output)
 
         # find last "N = " and "EMAX"
         iterations = []

@@ -148,16 +148,13 @@ def write_species_short_lived(original_species, modified_species):
 *   TRIDIAGONAL SOLVER
 *NQ1 should be the number directly above
 *   SHORT-LIVED SPECIES
-HNO2       SL  2 1 0 0 1 0
-O1D        SL  1 0 0 0 0 0
-CH21       SL  0 2 1 0 0 0
-CH23       SL  0 2 1 0 0 0
-C2H5       SL  0 5 2 0 0 0
-SO21       SL  2 0 0 1 0 0
-SO23       SL  2 0 0 1 0 0
-HSO3       SL  3 1 0 1 0 0
-OCS2       SL  1 0 1 2 0 0
 '''
+    for species in original_species.keys():
+        element = original_species[species] 
+        new_text += format_spaced_text( 11, species ) 
+        new_text += 'SL  {0} {1} {2} {3} {4} {5}\n'.format( element['O'], element['H'], element['C'], element['S'], element['N'], element['CL'] )
+
+
     return new_text
 
 
