@@ -42,8 +42,21 @@ cd pyatmos
 pip install -e .
 ```
 
+### Docker on GCS
+To upload your docker image to the google cloud, create your docker file as normal and build it. In this example the docker image will be called quickstart-image:
+    
+    # build the docker image 
+    docker build -t quickstart-image .
+
+    # tag it
+    docker tag quickstart-image gcr.io/i-agility-205814/quickstart-image:tag1
+
+Note that here, `i-agility-205814` is the google cloud Project ID [projectid]. tag1 is the name of the tag applied to the docker image. Now push the docker image to the docker container registry:
+
+    docker push gcr.io/i-agility-205814/quickstart-image:tag1
 
 
 Work in progress. Documentation to follow soon
 
 ![screenshot](https://gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos/raw/master/screenshot.png)
+[projectid] https://cloud.google.com/resource-manager/docs/creating-managing-projects#identifying_projects 
