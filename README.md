@@ -55,6 +55,10 @@ Note that here, `i-agility-205814` is the google cloud Project ID [projectid]. t
 
     docker push gcr.io/i-agility-205814/quickstart-image:tag1
 
+You may need to make sure that you have the right credentials if this fails, see: https://cloud.google.com/container-registry/docs/advanced-authentication 
+Since this is a test, you can delete the docker image:
+    gcloud container images delete gcr.io/i-agility-205814/quickstart-image:tag1 --force-delete-tags
+
 
 Work in progress. Documentation to follow soon
 
