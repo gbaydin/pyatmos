@@ -57,7 +57,12 @@ class Simulation():
         print("Container '{0}' running at {1}.".format(self._container.name, format_datetime(self._start_time) ))
 
     #_________________________________________________________________________
-    def run(self, species_concentrations={}, max_photochem_iterations=10000, n_clima_steps=500, output_directory='/Users/Will/Documents/FDL/results'):
+    def run(self, 
+            species_concentrations={}, 
+            max_photochem_iterations=10000, 
+            n_clima_steps=500, 
+            output_directory='/Users/Will/Documents/FDL/results'
+            ):
         '''
         Configures and runs ATMOS, then collects the output.  
         - Modifes species file with custom concentrations (supplied via species_concentrations) 
@@ -86,8 +91,13 @@ class Simulation():
             print('photochem converged')
 
         # run clima  
-        clima_converged = self._run_clima(n_clima_steps, output_directory)
+        if 'CH4' in species_concentrations.keys():
+            methane_concentration = species_concentrations['CH4'] 
+        else: 
+            methane_concentration = 1.80E-06 
+        clima_converged = self._run_clima(n_clima_steps, output_directory, methane_concentration)
 
+        # if clima didn't converge, exit
         if not clima_converged:
             return 'clima_error'
         else:
@@ -142,15 +152,18 @@ class Simulation():
         return True 
 
     #_________________________________________________________________________
-    def _run_clima(self, n_clima_steps, output_directory):
+    def _run_clima(self, n_clima_steps, output_directory, methane_concentration):
 
 
         # Modify CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat to change NSTEPS parameter 
+        # possible TO DO: automated change of IMETH in input_clima depending on methane concentration 
         clima_input = self._read_container_file('/code/atmos/CLIMA/IO/input_clima.dat')
         replacement_clima = [] 
         for line in clima_input:
             if 'NSTEPS=' in line:
                 line = 'NSTEPS=    {0}           !step number (200 recommended for coupling)\n'.format(n_clima_steps)
+            if 'IMET=' in line and methane_concentration > 1e-4:
+                line = 'IMET=      {0}\n'.format(1)
             replacement_clima.append(line)
         tmp_file_name = tempfile.NamedTemporaryFile().name
         tmp_file = open(tmp_file_name, 'w')
