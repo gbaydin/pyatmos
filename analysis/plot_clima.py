@@ -11,14 +11,19 @@ def main(input_file, output_directory):
     f2 = '/Users/Will/Documents/FDL/results/parsed_clima_final.csv'
 
     print('Read clima into dataframe ...')
+    # synthetic feature 
     clima_dataframe = pd.read_csv(input_file)
+    clima_dataframe['atm'] = clima_dataframe['P']*0.986923
+    print(clima_dataframe) 
     print('Make plot...')
 
     pressure = Axis('P', 'Pressure', 'bar')
+    atmospheres = Axis('atm', 'Pressure', 'atm') 
     altitude = Axis('ALT', 'Altitude', 'km')
     temperature = Axis('T', 'Temperature', 'K')
 
-    plot_clima_profile(clima_dataframe, xaxis=pressure, yaxis=altitude, output_directory=output_directory) 
+    #plot_clima_profile(clima_dataframe, xaxis=pressure, yaxis=altitude, output_directory=output_directory) 
+    plot_clima_profile(clima_dataframe, xaxis=atmospheres, yaxis=altitude, output_directory=output_directory) 
     plot_clima_profile(clima_dataframe, xaxis=temperature, yaxis=altitude, output_directory=output_directory) 
     #print(clima_dataframe)
     
