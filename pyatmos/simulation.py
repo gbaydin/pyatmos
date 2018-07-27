@@ -61,6 +61,7 @@ class Simulation():
             species_concentrations={}, 
             max_photochem_iterations=10000, 
             n_clima_steps=500, 
+            input_file_path = None,
             output_directory='/Users/Will/Documents/FDL/results'
             ):
         '''
@@ -76,13 +77,14 @@ class Simulation():
                                     concentration should be fractional (not a percentage) 
             max_photochem_iterations: int, maximum number of iterations allowed by photochem to test for convergence  
             n_clima_steps: int, number of steps taken by clima (default 400) 
+            input_file_path: string, path to the previous solution for photochem 
             output_directory: string, path to the directory to store outputs 
         '''
 
         self._run_time_start = pyatmos.util.UTC_now() 
 
         # run the photochemical model 
-        photochem_converged = self._run_photochem(species_concentrations, max_photochem_iterations, output_directory)
+        photochem_converged = self._run_photochem(species_concentrations, max_photochem_iterations, output_directory, input_file_path)
 
         # if photochem didn't converge, exit 
         if not photochem_converged: 
@@ -108,7 +110,7 @@ class Simulation():
 
 
     #_________________________________________________________________________
-    def _run_photochem(self, species_concentrations, max_photochem_iterations, output_directory):
+    def _run_photochem(self, species_concentrations, max_photochem_iterations, output_directory, input_file_path):
         '''
         Function to actually run the photochemical model, copies the results once finished 
         '''
@@ -119,6 +121,12 @@ class Simulation():
         self._modify_atmospheric_species('/code/atmos/PHOTOCHEM/INPUTFILES/species.dat', species_concentrations) 
         print('Modified species file with:')
         print(species_concentrations)
+
+        
+        # put in the new in.dist file (can be from previous run of photochem)
+        if input_file_path:
+            self._write_container_file(input_file_path, '/code/atmos/PHOTOCHEM/in.dist')
+
 
         
         ################################
