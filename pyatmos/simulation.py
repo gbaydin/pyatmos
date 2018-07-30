@@ -46,6 +46,10 @@ class Simulation():
         self._photochem_duration = None
         self._clima_duration     = None
         self._initialize_time    = pyatmos.util.UTC_now()
+
+        # other run metadata
+        self._n_photochem_iterations = None 
+        self._n_clima_iterations = None
         print('Initialization complete: '+format_datetime(self._initialize_time))
 
 
@@ -60,7 +64,7 @@ class Simulation():
     def run(self, 
             species_concentrations={}, 
             max_photochem_iterations=10000, 
-            n_clima_steps=500, 
+            max_clima_steps=500, 
             input_file_path = None,
             output_directory='/Users/Will/Documents/FDL/results'
             ):
@@ -68,7 +72,7 @@ class Simulation():
         Configures and runs ATMOS, then collects the output.  
         - Modifes species file with custom concentrations (supplied via species_concentrations) 
         - Runs the photochemical model and checks for convergence in max_photochem_iterations steps 
-        - If converged, then runs the clima model. First modifies the clima input file with n_clima_steps   
+        - If converged, then runs the clima model. First modifies the clima input file with max_clima_steps   
         - copies the results files to output_directory 
 
         Args: 
@@ -76,7 +80,7 @@ class Simulation():
                                     { 'species name' : concentration (float) }
                                     concentration should be fractional (not a percentage) 
             max_photochem_iterations: int, maximum number of iterations allowed by photochem to test for convergence  
-            n_clima_steps: int, number of steps taken by clima (default 400) 
+            max_clima_steps: int, number of steps taken by clima (default 400) 
             input_file_path: string, path to the previous solution for photochem 
             output_directory: string, path to the directory to store outputs 
         '''
@@ -97,7 +101,7 @@ class Simulation():
             methane_concentration = species_concentrations['CH4'] 
         else: 
             methane_concentration = 1.80E-06 
-        clima_converged = self._run_clima(n_clima_steps, output_directory, methane_concentration)
+        clima_converged = self._run_clima(max_clima_steps, output_directory, methane_concentration)
 
         # if clima didn't converge, exit
         if not clima_converged:
@@ -108,6 +112,16 @@ class Simulation():
         self._run_time_end = pyatmos.util.UTC_now()
         return 'success' 
 
+    def get_metadata(self):
+
+        return {
+                'start_time' : self._start_time,
+                'photochem_duration' : self._photochem_duration,
+                'photochem_iterations' : self._n_photochem_iterations,  
+                'clima_duration' : self._clima_duration,
+                #'clima_iterations' : self._n_clima_iterations, # TO DO, clima iterations not set   
+                'run_duraton' : self._run_time_end - self._run_time_start,
+                }
 
     #_________________________________________________________________________
     def _run_photochem(self, species_concentrations, max_photochem_iterations, output_directory, input_file_path):
@@ -138,6 +152,7 @@ class Simulation():
 
         # check for convergence of photochem   
         [photochem_converged, n_photochem_iterations] = self._check_photochem_convergence(max_photochem_iterations)
+        self._n_photochem_iterations = n_photochem_iterations 
         if not photochem_converged:
             return False
 
@@ -160,7 +175,7 @@ class Simulation():
         return True 
 
     #_________________________________________________________________________
-    def _run_clima(self, n_clima_steps, output_directory, methane_concentration):
+    def _run_clima(self, max_clima_steps, output_directory, methane_concentration):
 
 
         # Modify CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat to change NSTEPS parameter 
@@ -169,7 +184,7 @@ class Simulation():
         replacement_clima = [] 
         for line in clima_input:
             if 'NSTEPS=' in line:
-                line = 'NSTEPS=    {0}           !step number (200 recommended for coupling)\n'.format(n_clima_steps)
+                line = 'NSTEPS=    {0}           !step number (200 recommended for coupling)\n'.format(max_clima_steps)
             if 'IMET=' in line and methane_concentration > 1e-4:
                 line = 'IMET=      {0}\n'.format(1)
             replacement_clima.append(line)
@@ -190,7 +205,7 @@ class Simulation():
         self._container.exec_run("sed -i 's/IUP=       1/IUP=       0/g' /code/atmos/CLIMA/IO/input_clima.dat")
 
         # Run clima 
-        print('running clima with {0} steps ...'.format(n_clima_steps))
+        print('running clima with {0} steps ...'.format(max_clima_steps))
         self._clima_duration = pyatmos.util.UTC_now()
         self._container.exec_run('./Clima.run')
         self._clima_duration = pyatmos.util.UTC_now() - self._clima_duration 
