@@ -178,12 +178,12 @@ class Simulation():
     def get_metadata(self):
 
         return {
-                'start_time' : self._start_time,
+                'atmos_start_time' : self._run_start_time,
                 'photochem_duration' : self._photochem_duration,
                 'photochem_iterations' : self._n_photochem_iterations,  
                 'clima_duration' : self._clima_duration,
                 #'clima_iterations' : self._n_clima_iterations, # TO DO, clima iterations not set   
-                'run_duraton' : self._run_time_end - self._run_time_start,
+                'atmos_run_duraton' : self._run_time_end - self._run_time_start,
                 'input_max_clima_iterations' : self._max_clima_steps,
                 'input_max_photochem_iterations' : self._max_photochem_iterations,
                 'input_species_concentrations' : self._species_concentrations 

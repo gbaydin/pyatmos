@@ -11,9 +11,12 @@ bucket_name = 'astrobio'
 gcs_bucket = gcs_storage_client.get_bucket(bucket_name)
 
 # get new blob object 
-blob = gcs_bucket.blob('tempdir/new_file_will2.txt')
+blob = gcs_bucket.blob('tempdir/new_file_will3.txt')
 print(blob)
 
 # string to wrte
 to_write ='this is a \n nice string \n with some text'
 blob.upload_from_string(to_write)
+
+# read file from bucket 
+blob = gcs_bucket.blob('tempdir/new_file_will3.txt')
