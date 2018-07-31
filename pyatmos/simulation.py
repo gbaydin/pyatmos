@@ -178,7 +178,7 @@ class Simulation():
     def get_metadata(self):
 
         return {
-                'atmos_start_time' : self._run_start_time,
+                'atmos_start_time' : self._run_time_start,
                 'photochem_duration' : self._photochem_duration,
                 'photochem_iterations' : self._n_photochem_iterations,  
                 'clima_duration' : self._clima_duration,
