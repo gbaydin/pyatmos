@@ -2,6 +2,7 @@ import docker
 import tempfile
 import os
 import inspect
+import json 
 #import numpy
 
 import pyatmos
@@ -71,6 +72,12 @@ class Simulation():
         self._clima_duration     = None
         self._initialize_time    = pyatmos.util.UTC_now()
 
+        # metadata for run parameters
+        self._species_concentrations = None
+        self._max_photochem_iterations = None
+        self._max_clima_steps = None
+
+
         # other run metadata
         self._n_photochem_iterations = None 
         self._n_clima_iterations = None
@@ -121,10 +128,16 @@ class Simulation():
             output_directory: string, path to the directory to store outputs 
         '''
 
+        # set metadata
+        self._species_concentrations = species_concentrations 
+        self._max_photochem_iterations = max_photochem_iterations
+        self._max_clima_steps = max_clima_steps 
         self._run_time_start = pyatmos.util.UTC_now() 
+
 
         # make sure we're in the right directory
         self._generic_run('cd '+self._atmos_directory) 
+
 
         # run the photochemical model 
         photochem_converged = self._run_photochem(species_concentrations, max_photochem_iterations, output_directory, input_file_path)
@@ -152,6 +165,13 @@ class Simulation():
         return 'success' 
 
     #_________________________________________________________________________
+    def write_metadata(self, output_path):
+        metadata = self.get_metadata()
+        with open(output_path, 'w') as fp:
+            json.dump(metadata, fp, sort_keys=True, indent=4)
+
+
+    #_________________________________________________________________________
     def get_metadata(self):
 
         return {
@@ -161,6 +181,9 @@ class Simulation():
                 'clima_duration' : self._clima_duration,
                 #'clima_iterations' : self._n_clima_iterations, # TO DO, clima iterations not set   
                 'run_duraton' : self._run_time_end - self._run_time_start,
+                'input_max_clima_iterations' : self._max_clima_steps,
+                'input_max_photochem_iterations' : self._max_photochem_iterations,
+                'input_species_concentrations' : self._species_concentrations 
                 }
 
     #_________________________________________________________________________
