@@ -25,7 +25,7 @@ def format_datetime(unix_timestamp):
 
 class Simulation():
     def __init__(self, 
-            docker_image='registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', 
+            docker_image=None, # 'registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', 
             code_path=None,
             DEBUG=False, 
             atmos_directory = '/code/atmos',
@@ -38,14 +38,27 @@ class Simulation():
         '''
 
         # get input arguments
-        self._docker_image = docker_image
-        if self._docker_image:
+        self._docker_image    = docker_image
+        self._code_path       = code_path
+        self._debug           = DEBUG
+        self._atmos_directory = atmos_directory
+        self._gcs_bucket      = gcs_bucket
+
+        # check if properly initialsed
+        if (self._docker_image is not None) and (self._code_path is not None):
+            print('ERROR: specify _either_ a docker images, or a local code path to ATMOS, but not both')
+        if (self._docker_image is None) and (self._code_path is None):
+            print('ERROR: you must specify _either_ a docker images, or a local code path to ATMOS')
+
+
+        # initialize docker if need be 
+        if self._docker_image is not None:
             self._initialize_docker()
-        self._debug = DEBUG
-        self._atmos_directory = atmos_directory 
+        else:
+            self._atmos_directory = self._code_path 
 
         # test if GCS bucket is enabled  
-        if not gcs_bucket is None:
+        if gcs_bucket is not None:
             self._gcs_enabled = True 
         else:
             self._gcs_enabled = False 
@@ -75,7 +88,7 @@ class Simulation():
 
     #_________________________________________________________________________
     def start(self):
-        if self._docker_image:
+        if self._docker_image is not None:
             print('Starting Docker container...')
             self._container = self._docker_client.containers.run(self._docker_image, detach=True, tty=True)
             self._start_time = pyatmos.util.UTC_now()
@@ -174,7 +187,7 @@ class Simulation():
         # Run photochem 
         ################################
         self._photochem_duration = pyatmos.util.UTC_now()
-        self._generic_run('./Photo.run')
+        self._generic_run('cd {0} && ./Photo.run'.format(self._atmos_directory))
         self._photochem_duration = pyatmos.util.UTC_now() - self._photochem_duration 
 
         # check for convergence of photochem   
@@ -231,13 +244,13 @@ class Simulation():
         #Also set IUP=       0 in /CLIMA/IO/input_clima.dat
         ################################
 
-        self._generic_run("cp  /code/atmos/CLIMA/IO/TempOut.dat /code/atmos/CLIMA/IO/TempIn.dat")
-        self._generic_run("sed -i 's/IUP=       1/IUP=       0/g' /code/atmos/CLIMA/IO/input_clima.dat")
+        self._generic_run("cp  {0}/CLIMA/IO/TempOut.dat {0}/CLIMA/IO/TempIn.dat".format(self._atmos_directory)) # internal copy (within the docker container) 
+        self._generic_run("sed -i 's/IUP=       1/IUP=       0/g' {0}/CLIMA/IO/input_clima.dat".format(self._atmos_directory))
 
         # Run clima 
         print('running clima with {0} steps ...'.format(max_clima_steps))
         self._clima_duration = pyatmos.util.UTC_now()
-        self._generic_run('./Clima.run')
+        self._generic_run('cd {0} && ./Clima.run'.format(self._atmos_directory))
         self._clima_duration = pyatmos.util.UTC_now() - self._clima_duration 
         print('finished clima')
         self.debug('Clima took '+str(self._clima_duration)+' seconds')
@@ -326,7 +339,7 @@ class Simulation():
             input_file_name: string, path of file on local filesystem
             output_file_name: string, path of file inside docker image
         '''
-        if self._docker_image:
+        if self._docker_image is not None:
             cmd = 'docker cp {0} {1}:{2}'.format(input_file_name, self._container.name, output_file_name)
         else:
             cmd = 'cp {0} {1}'.format(input_file_name, output_file_name)
@@ -342,7 +355,7 @@ class Simulation():
             output_path: string, destination path (or directory) of file 
         '''
 
-        if self._docker_image:
+        if self._docker_image is not None:
             cmd = 'docker cp ' + self._container.name +':'+input_file_name + ' ' + output_path  
         else:
             cmd = 'cp {0} {1}'.format(input_file_name, output_path)
@@ -362,19 +375,32 @@ class Simulation():
         #os.system(cmd)
         return pyatmos.util.strings_file(tmp_file_name)
 
+    #_________________________________________________________________________
     def _generic_run(self, command):
         '''
         Runs command either inside docker or simple os system command
+        Args:
+            command: string, the command to be executed
         '''
-        if self._docker_image:
+        if self._docker_image is not None:
             self._container.exec_run(command)
         else:
             os.system(command)
 
 
+        if self._debug: 
+            caller_name = inspect.stack()[1][3]
+            print('DEBUG {0}: {1}'.format(caller_name, command))
+
+
 
     #_________________________________________________________________________
     def debug(self, message):
+        '''
+        Printing of debug messages, includes the name of the function which called it 
+        Args:
+            message: string, message to be printed  
+        '''
         if self._debug: 
             caller_name = inspect.stack()[1][3]
             print('DEBUG {0}: {1}'.format(caller_name,message))
@@ -427,6 +453,6 @@ class Simulation():
     #_________________________________________________________________________
     def close(self):
         print('Exiting...')
-        if self._container is not None:
+        if (self._container is not None) and (self._docker_image is not None):
             print('Container killed.')
             self._container.kill()
