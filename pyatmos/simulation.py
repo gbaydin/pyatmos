@@ -1,6 +1,7 @@
 import docker
 import tempfile
 import os
+import inspect
 #import numpy
 
 import pyatmos
@@ -375,7 +376,9 @@ class Simulation():
     #_________________________________________________________________________
     def debug(self, message):
         if self._debug: 
-            print('DEBUG: '+message)
+            caller_name = inspect.stack()[1][3]
+            print('DEBUG {0}: {1}'.format(caller_name,message))
+
 
 
     #_________________________________________________________________________
