@@ -23,15 +23,25 @@ def format_datetime(unix_timestamp):
 
 
 class Simulation():
-    def __init__(self, docker_image='registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', DEBUG=False, gcs_bucket=None):
+    def __init__(self, 
+            docker_image='registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', 
+            code_path=None
+            DEBUG=False, 
+            atmos_directory = '/code/atmos'
+            gcs_bucket=None):
+        '''
+        docker_image: string (optional). If specified, pyatmos will communicate with a docker image, otherwise use the code_path 
+        code_path: string (optional). If specified, pyatmos will communicate witha local version of atmos. The string is the path to the atmos directory 
+        DEBUG: bool, if set to true, extra debug messages are printed
+        gcs_bucket: string, name of gcs bucket 
+        '''
 
+        # get input arguments
         self._docker_image = docker_image
-        print('Initializing Docker...')
-        self._docker_client = docker.from_env()
-        print('Pulling latest image... {}'.format(self._docker_image))
-        self._docker_client.images.pull(self._docker_image)
-        self._container = None
+        if self._docker_image:
+            self._initialize_docker()
         self._debug = DEBUG
+        self._atmos_directory = atmos_directory 
 
         # test if GCS bucket is enabled  
         if not gcs_bucket is None:
@@ -52,13 +62,25 @@ class Simulation():
         self._n_clima_iterations = None
         print('Initialization complete: '+format_datetime(self._initialize_time))
 
+    #_________________________________________________________________________
+    def _initialize_docker(self):
+        print('Initializing Docker...')
+        self._docker_client = docker.from_env()
+        print('Pulling latest image... {}'.format(self._docker_image))
+        self._docker_client.images.pull(self._docker_image)
+        self._container = None
+
+
 
     #_________________________________________________________________________
     def start(self):
-        print('Starting Docker container...')
-        self._container = self._docker_client.containers.run(self._docker_image, detach=True, tty=True)
-        self._start_time = pyatmos.util.UTC_now()
-        print("Container '{0}' running at {1}.".format(self._container.name, format_datetime(self._start_time) ))
+        if self._docker_image:
+            print('Starting Docker container...')
+            self._container = self._docker_client.containers.run(self._docker_image, detach=True, tty=True)
+            self._start_time = pyatmos.util.UTC_now()
+            print("Container '{0}' running at {1}.".format(self._container.name, format_datetime(self._start_time) ))
+        else:
+            print('pyatmos is ready to go! ')
 
     #_________________________________________________________________________
     def run(self, 
@@ -87,6 +109,9 @@ class Simulation():
 
         self._run_time_start = pyatmos.util.UTC_now() 
 
+        # make sure we're in the right directory
+        self._generic_run('cd '+self._atmos_directory) 
+
         # run the photochemical model 
         photochem_converged = self._run_photochem(species_concentrations, max_photochem_iterations, output_directory, input_file_path)
 
@@ -112,6 +137,7 @@ class Simulation():
         self._run_time_end = pyatmos.util.UTC_now()
         return 'success' 
 
+    #_________________________________________________________________________
     def get_metadata(self):
 
         return {
@@ -132,14 +158,14 @@ class Simulation():
         ################################
         # modify species file, changes the concentrations inside species.dat as specified by species_concentrations
         ################################
-        self._modify_atmospheric_species('/code/atmos/PHOTOCHEM/INPUTFILES/species.dat', species_concentrations) 
+        self._modify_atmospheric_species(self._atmos_directory+'/PHOTOCHEM/INPUTFILES/species.dat', species_concentrations) 
         print('Modified species file with:')
         print(species_concentrations)
 
         
         # put in the new in.dist file (can be from previous run of photochem)
         if input_file_path:
-            self._write_container_file(input_file_path, '/code/atmos/PHOTOCHEM/in.dist')
+            self._write_container_file(input_file_path, self._atmos_directory+'/PHOTOCHEM/in.dist')
 
 
         
@@ -147,7 +173,7 @@ class Simulation():
         # Run photochem 
         ################################
         self._photochem_duration = pyatmos.util.UTC_now()
-        self._container.exec_run('./Photo.run')
+        self._generic_run('./Photo.run')
         self._photochem_duration = pyatmos.util.UTC_now() - self._photochem_duration 
 
         # check for convergence of photochem   
@@ -164,13 +190,13 @@ class Simulation():
         # copy photochem results
         ################################
 
-        self._copy_container_file('/code/atmos/PHOTOCHEM/OUTPUT/out.out', output_directory)
-        self._copy_container_file('/code/atmos/PHOTOCHEM/OUTPUT/out.dist', output_directory) 
-        self._copy_container_file('/code/atmos/PHOTOCHEM/INPUTFILES/species.dat', output_directory)
-        self._copy_container_file('/code/atmos/PHOTOCHEM/in.dist', output_directory) 
+        self._copy_container_file(self._atmos_directory+'/PHOTOCHEM/OUTPUT/out.out', output_directory)
+        self._copy_container_file(self._atmos_directory+'/PHOTOCHEM/OUTPUT/out.dist', output_directory) 
+        self._copy_container_file(self._atmos_directory+'/PHOTOCHEM/INPUTFILES/species.dat', output_directory)
+        self._copy_container_file(self._atmos_directory+'/PHOTOCHEM/in.dist', output_directory) 
 
         # copy photochem results inside the docker image, ready for the next run of photochem 
-        self._container.exec_run("cp  /code/atmos/PHOTOCHEM/OUTPUT/out.dist /code/atmos/PHOTOCHEM/in.dist")
+        self._generic_run("cp  {0}/PHOTOCHEM/OUTPUT/out.dist /PHOTOCHEM/in.dist.".format(self._atmos_directory)
 
         return True 
 
@@ -179,8 +205,11 @@ class Simulation():
 
 
         # Modify CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat to change NSTEPS parameter 
-        # possible TO DO: automated change of IMETH in input_clima depending on methane concentration 
-        clima_input = self._read_container_file('/code/atmos/CLIMA/IO/input_clima.dat')
+        # Also change IMET parameter depending on methane concentration 
+
+       
+        clima_input = self._read_container_file(self._atmos_directory+'/CLIMA/IO/input_clima.dat') # clima_input: file containing strings of input_clima.dat 
+
         replacement_clima = [] 
         for line in clima_input:
             if 'NSTEPS=' in line:
@@ -193,7 +222,7 @@ class Simulation():
         for l in replacement_clima:
             tmp_file.write(l)
         tmp_file.close() # VERY important to close the file!! 
-        self._write_container_file(tmp_file_name, '/code/atmos/CLIMA/IO/input_clima.dat')
+        self._write_container_file(tmp_file_name, self._atmos_directory+'/CLIMA/IO/input_clima.dat')
 
 
         ################################
@@ -201,19 +230,19 @@ class Simulation():
         #Also set IUP=       0 in /CLIMA/IO/input_clima.dat
         ################################
 
-        self._container.exec_run("cp  /code/atmos/CLIMA/IO/TempOut.dat /code/atmos/CLIMA/IO/TempIn.dat")
-        self._container.exec_run("sed -i 's/IUP=       1/IUP=       0/g' /code/atmos/CLIMA/IO/input_clima.dat")
+        self._generic_run("cp  /code/atmos/CLIMA/IO/TempOut.dat /code/atmos/CLIMA/IO/TempIn.dat")
+        self._generic_run("sed -i 's/IUP=       1/IUP=       0/g' /code/atmos/CLIMA/IO/input_clima.dat")
 
         # Run clima 
         print('running clima with {0} steps ...'.format(max_clima_steps))
         self._clima_duration = pyatmos.util.UTC_now()
-        self._container.exec_run('./Clima.run')
+        self._generic_run('./Clima.run')
         self._clima_duration = pyatmos.util.UTC_now() - self._clima_duration 
         print('finished clima')
         self.debug('Clima took '+str(self._clima_duration)+' seconds')
 
         # copy clima output files out of docker image  
-        self._copy_container_file('/code/atmos/CLIMA/IO/clima_allout.tab', output_directory)
+        self._copy_container_file(self._atmos_directory+'/CLIMA/IO/clima_allout.tab', output_directory)
 
         return True 
 
@@ -267,11 +296,12 @@ class Simulation():
         Args:
             max_photochem_iterations: an interger with the maximum number of iterations for convergence 
         '''
-
-        #output = self._container.exec_run("grep 'N =' /code/atmos/PHOTOCHEM/OUTPUT/out.out")
-        output = self._read_container_file('/code/atmos/PHOTOCHEM/OUTPUT/out.out')
+        #output = self._generic_run("grep 'N =' /code/atmos/PHOTOCHEM/OUTPUT/out.out")
         #print('output\n')
         #print(output)
+
+        # output is a string containing the lines of /PHOTOCHEM/OUTPUT/out.out 
+        output = self._read_container_file(self._atmos_directory+'/PHOTOCHEM/OUTPUT/out.out')
 
         # find last "N = " and "EMAX"
         iterations = []
@@ -295,7 +325,10 @@ class Simulation():
             input_file_name: string, path of file on local filesystem
             output_file_name: string, path of file inside docker image
         '''
-        cmd = 'docker cp ' + input_file_name + ' ' + self._container.name + ':' + output_file_name
+        if self._docker_image:
+            cmd = 'docker cp {0} {1}:{2}'.format(input_file_name, self._container.name, output_file_name)
+        else:
+            cmd = 'cp {0} {1}'.format(input_file_name, output_file_name)
         self.debug(cmd)
         os.system(cmd)
 
@@ -307,29 +340,37 @@ class Simulation():
             input_file_name: string, path of file inside the docker image
             output_path: string, destination path (or directory) of file 
         '''
-        cmd = 'docker cp ' + self._container.name +':'+input_file_name + ' ' + output_path  
+
+        if self._docker_image:
+            cmd = 'docker cp ' + self._container.name +':'+input_file_name + ' ' + output_path  
+        else:
+            cmd = 'cp {0} {1}'.format(input_file_name, output_path)
         self.debug(cmd)
         os.system(cmd) 
 
 
     #_________________________________________________________________________
     def _read_container_file(self, container_file_name):
+        '''
+        Copy file out of the container and turn it into python strings 
+        '''
         tmp_file_name = tempfile.NamedTemporaryFile().name
-        cmd = 'docker cp ' + self._container.name + ':' + container_file_name + ' ' + tmp_file_name
-        self.debug(cmd)
-        os.system(cmd)
+        self._copy_container_file(container_file_name, tmp_file_name) 
+        #cmd = 'docker cp ' + self._container.name + ':' + container_file_name + ' ' + tmp_file_name
+        #self.debug(cmd)
+        #os.system(cmd)
         return pyatmos.util.strings_file(tmp_file_name)
 
-    #_________________________________________________________________________
-    def _get_container_file(self, container_file_name):
+    def _generic_run(self, command):
         '''
-        Copies a file OUT of the docker image to a temp file, and then returns the string of at file  
+        Runs command either inside docker or simple os system command
         '''
-        tmp_file_name = tempfile.NamedTemporaryFile().name
-        cmd = 'docker cp ' + self._container.name + ':' + container_file_name + ' ' + tmp_file_name
-        self.debug(cmd)
-        os.system(cmd)
-        return pyatmos.util.read_file(tmp_file_name)
+        if self._docker_image:
+            self._container.exec_run(command)
+        else:
+            os.system(command)
+
+
 
     #_________________________________________________________________________
     def debug(self, message):
@@ -343,18 +384,27 @@ class Simulation():
         pass
 
     '''
+    #_________________________________________________________________________
+    def _get_container_file(self, container_file_name):
+        # Copies a file OUT of the docker image to a temp file, and then returns the string of at file  
+        tmp_file_name = tempfile.NamedTemporaryFile().name
+        cmd = 'docker cp ' + self._container.name + ':' + container_file_name + ' ' + tmp_file_name
+        self.debug(cmd)
+        os.system(cmd)
+        return pyatmos.util.read_file(tmp_file_name)
+
     def run(self, iterations=1):
         print('Running {} iterations...'.format(iterations))
         for i in range(iterations):
             print('Iteration {}'.format(i+1))
-            self._container.exec_run('./pyatmos_coupled_iterate.sh')
+            self._generic_run('./pyatmos_coupled_iterate.sh')
         print('Done.')
 
     def get_input_clima(self):
-        return self._get_container_file('/code/atmos/CLIMA/IO/input_clima.dat')
+        return self._get_container_file(self._atmos_directory+'/CLIMA/IO/input_clima.dat')
 
     def get_input_photochem(self):
-        return self._get_container_file('/code/atmos/PHOTOCHEM/INPUTFILES/input_photchem.dat')
+        return self._get_container_file(self._atmos_directory+'/PHOTOCHEM/INPUTFILES/input_photchem.dat')
 
 
     '''
