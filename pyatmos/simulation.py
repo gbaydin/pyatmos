@@ -65,11 +65,11 @@ class Simulation():
             self._gcs_enabled = False 
 
         # metadata for runtime 
-        self._start_time         = None
-        self._run_time_start     = None
-        self._run_time_end       = None
-        self._photochem_duration = None
-        self._clima_duration     = None
+        self._start_time         = 0
+        self._run_time_start     = 0
+        self._run_time_end       = 0
+        self._photochem_duration = 0
+        self._clima_duration     = 0
         self._initialize_time    = pyatmos.util.UTC_now()
 
         # metadata for run parameters
