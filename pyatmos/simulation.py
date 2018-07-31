@@ -128,6 +128,9 @@ class Simulation():
             output_directory: string, path to the directory to store outputs 
         '''
 
+        # make the output directory
+        os.system('mkdir -p '+output_directory)
+
         # set metadata
         self._species_concentrations = species_concentrations 
         self._max_photochem_iterations = max_photochem_iterations
