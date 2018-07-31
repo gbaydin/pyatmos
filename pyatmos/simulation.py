@@ -25,9 +25,9 @@ def format_datetime(unix_timestamp):
 class Simulation():
     def __init__(self, 
             docker_image='registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', 
-            code_path=None
+            code_path=None,
             DEBUG=False, 
-            atmos_directory = '/code/atmos'
+            atmos_directory = '/code/atmos',
             gcs_bucket=None):
         '''
         docker_image: string (optional). If specified, pyatmos will communicate with a docker image, otherwise use the code_path 
@@ -196,7 +196,7 @@ class Simulation():
         self._copy_container_file(self._atmos_directory+'/PHOTOCHEM/in.dist', output_directory) 
 
         # copy photochem results inside the docker image, ready for the next run of photochem 
-        self._generic_run("cp  {0}/PHOTOCHEM/OUTPUT/out.dist /PHOTOCHEM/in.dist.".format(self._atmos_directory)
+        self._generic_run("cp  {0}/PHOTOCHEM/OUTPUT/out.dist /PHOTOCHEM/in.dist.".format(self._atmos_directory))
 
         return True 
 
