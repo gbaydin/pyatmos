@@ -319,6 +319,35 @@ class Simulation():
 
 
     #_________________________________________________________________________
+    @staticmethod
+    def get_surface_temperature(parsed_clima_file):
+        '''
+        Return the surface temperature in Kelvin [K] from the processed clima output 
+        Args:
+            parsed_clima_file: a processed clima file in csv format
+        '''
+        import pandas as pd 
+        df = pd.read_csv(parsed_clima_file)
+        temp = df[df['ALT'] ==0]['T']
+        return float(temp) 
+        
+
+    #_________________________________________________________________________
+    @staticmethod
+    def get_surface_pressure(parsed_clima_file):
+        '''
+        Return the surface pressure in [bar] from the processed clima output
+        Args:
+            parsed_clima_file: a processed clima file in csv format
+        '''
+        import pandas as pd
+        df = pd.read_csv(parsed_clima_file)
+        pressure = df[df['ALT'] ==0]['P']
+        return float(pressure)
+
+
+
+    #_________________________________________________________________________
     def print_run_metadata(self):
         '''
         Prints metadata from the previous call of run 
