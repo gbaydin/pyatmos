@@ -171,7 +171,7 @@ class Simulation():
                                     output_directory = output_directory,
                                     debug=self._debug )
 
-        pyatmos.parser.parse_photochem(input_file = photochem_input+'/out.out',
+        pyatmos.parser.parse_photochem(input_file = output_directory+'/out.out',
                                     output_directory = output_directory,
                                     debug=self._debug )
 
