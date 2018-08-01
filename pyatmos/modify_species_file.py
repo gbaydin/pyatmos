@@ -183,7 +183,8 @@ def write_species_inert(original_species, modified_species):
                 ) 
 
         if species in species_to_modify:
-            new_line += '    '+modified_species[species] 
+            print(species_to_modify)
+            new_line += '    {0}'.format(modified_species[species])
         else:
             new_line += '    '+original_line['FIXEDMR']
 
