@@ -261,15 +261,21 @@ class Simulation():
     def _run_clima(self, max_clima_steps, output_directory, methane_concentration, previous_clima_solution):
 
 
-        # Modify CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat to change NSTEPS parameter 
-        # Also change IMET parameter depending on methane concentration 
 
-        clima_input = self._read_container_file(self._atmos_directory+'/CLIMA/IO/input_clima.dat') # clima_input: file containing strings of input_clima.dat 
+        ################################
+        # Deal with clima input to get it ready for running 
+        ################################
 
+        # To help with convergence, replace /CLIMA/IO/TempIn.dat with /CLIMA/IO/TempOut.dat
         # Write the new TempIn.dat file (can be from previous run of clima)
         if previous_clima_solution:
             self._write_container_file(previous_clima_solution, self._atmos_directory+'/CLIMA/IO/TempIn.dat')
+        else:
+            self._generic_run("cp  {0}/CLIMA/IO/TempOut.dat {0}/CLIMA/IO/TempIn.dat".format(self._atmos_directory)) # internal copy (within the docker container, in case clima has been run twice) 
 
+        # Modify CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat to change NSTEPS parameter, 
+        # and also change IMET parameter depending on methane concentration.  
+        clima_input = self._read_container_file(self._atmos_directory+'/CLIMA/IO/input_clima.dat') # clima_input: file containing strings of input_clima.dat 
         replacement_clima = [] 
         for line in clima_input:
             if 'NSTEPS=' in line:
@@ -284,16 +290,15 @@ class Simulation():
         tmp_file.close() # VERY important to close the file!! 
         self._write_container_file(tmp_file_name, self._atmos_directory+'/CLIMA/IO/input_clima.dat')
 
-
-        ################################
-        #To help with convergence, potentially replace /CLIMA/IO/TempIn.dat with /CLIMA/IO/TempOut.dat
-        #Also set IUP=       0 in /CLIMA/IO/input_clima.dat
-        ################################
-
-        self._generic_run("cp  {0}/CLIMA/IO/TempOut.dat {0}/CLIMA/IO/TempIn.dat".format(self._atmos_directory)) # internal copy (within the docker container) 
+        # Set "IUP=       0" in /CLIMA/IO/input_clima.dat 
         self._generic_run("sed -i 's/IUP=       1/IUP=       0/g' {0}/CLIMA/IO/input_clima.dat".format(self._atmos_directory))
 
+
+
+        ################################
         # Run clima 
+        ################################
+
         print('running clima with {0} steps ...'.format(max_clima_steps))
         self._clima_duration = pyatmos.util.UTC_now()
         if self._docker_image is not None:
@@ -306,7 +311,8 @@ class Simulation():
 
         # copy clima output files out of docker image  
         self._copy_container_file(self._atmos_directory+'/CLIMA/IO/clima_allout.tab', output_directory)
-        self._copy_container_file(self._atmos_directory+'/CLIMA/IO/TempOut.dat', output_directory)
+        self._copy_container_file(self._atmos_directory+'/CLIMA/IO/TempOut.dat', output_directory) # potentially needed for next run
+        self._copy_container_file(self._atmos_directory+'/CLIMA/IO/TempIn.dat', output_directory) # keep for debugging purposes 
 
         return True 
 
