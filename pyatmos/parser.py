@@ -233,6 +233,8 @@ def parse_clima(input_file, output_directory, debug):
     
     ofile1 = open(output_directory+'/parsed_clima_initial.csv', 'w')
     ofile2 = open(output_directory+'/parsed_clima_final.csv', 'w')
+    ofile3 = open(output_directory+'/parsed_clima_iterations.csv', 'w')
+    ofile3.write('NST, JCONV, CHG, dt0, DIVF(1), DIVFrms, DT(ND), T(ND)\n')
     
     unused_lines = [] 
     capture = False
@@ -255,7 +257,30 @@ def parse_clima(input_file, output_directory, debug):
             if n_tables == 2:
                 ofile2.write( ','.join(info)) 
                 ofile2.write('\n')
+
+        # capture lines with DIVFrms in 
+        if 'NST' and 'DIVFrms' in line:
+            info = line.split()
+            info = ' '.join(info).replace('= ', '=')
+            info = info.split()
+
+            new_line = '{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}\n'.format( 
+                                                                         float(info[0].split('=')[-1]), 
+                                                                         float(info[1].split('=')[-1]),
+                                                                         float(info[2].split('=')[-1]),
+                                                                         float(info[3].split('=')[-1]),
+                                                                         float(info[4].split('=')[-1]),
+                                                                         float(info[5].split('=')[-1]),
+                                                                         float(info[6].split('=')[-1]),
+                                                                         float(info[7].split('=')[-1])
+                                                                         )
+            ofile3.write(new_line)
+
+
+
+
     ofile1.close()
     ofile2.close()
+    ofile3.close()
 
     if debug: print('parse_clima finished')
