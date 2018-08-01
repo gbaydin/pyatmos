@@ -125,7 +125,7 @@ class Simulation():
             max_photochem_iterations: int, maximum number of iterations allowed by photochem to test for convergence  
             max_clima_steps: int, number of steps taken by clima (default 400) 
             input_file_path: string, path to the previous solution for photochem 
-            output_directory: string, path to the directory to store outputs 
+            output_directory: string, path to the directory to store outputs (on your own filesystem!!) 
         '''
 
         # make the output directory
@@ -213,7 +213,10 @@ class Simulation():
         # Run photochem 
         ################################
         self._photochem_duration = pyatmos.util.UTC_now()
-        self._generic_run('cd {0} && ./Photo.run'.format(self._atmos_directory))
+        if self._docker_image is not None:
+            self._container.exec_run('./Photo.run')
+        else:
+            self._generic_run('cd {0} && ./Photo.run'.format(self._atmos_directory))
         self._photochem_duration = pyatmos.util.UTC_now() - self._photochem_duration 
 
         # check for convergence of photochem   
@@ -413,6 +416,7 @@ class Simulation():
         '''
         if self._docker_image is not None:
             self._container.exec_run(command)
+            print('generic run ... '+ command) 
         else:
             os.system(command)
 
