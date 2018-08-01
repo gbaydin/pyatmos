@@ -165,6 +165,18 @@ class Simulation():
             print('clima converged')
 
         self._run_time_end = pyatmos.util.UTC_now()
+
+        # parse the output of photochem and clima (writes output as pandas csv file) 
+        pyatmos.parser.parse_clima(input_file = output_directory+'/clima_allout.tab',
+                                    output_directory = output_directory,
+                                    debug=self._debug )
+
+        pyatmos.parser.parse_photochem(input_file = photochem_input+'/out.out',
+                                    output_directory = output_directory,
+                                    debug=self._debug )
+
+        
+
         return 'success' 
 
     #_________________________________________________________________________
