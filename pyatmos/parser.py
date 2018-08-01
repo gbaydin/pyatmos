@@ -138,9 +138,9 @@ def parse_photochem(input_file, output_directory, debug):
     final_mix_table = concatenate_tables(mix_tables)
 
     final_flux_table.to_csv(output_directory+'/parsed_photochem_fluxes.csv')
-    print('Writing', output_directory+'/parsed_photochem_fluxes.csv')
+    #print('Writing', output_directory+'/parsed_photochem_fluxes.csv')
     final_mix_table.to_csv(output_directory+'/parsed_photochem_mixing_ratios.csv')
-    print('Writing', output_directory+'/parsed_photochem_mixing_ratios.csv')
+    #print('Writing', output_directory+'/parsed_photochem_mixing_ratios.csv')
 
 
 
@@ -234,7 +234,7 @@ def parse_clima(input_file, output_directory, debug):
     ofile1 = open(output_directory+'/parsed_clima_initial.csv', 'w')
     ofile2 = open(output_directory+'/parsed_clima_final.csv', 'w')
     ofile3 = open(output_directory+'/parsed_clima_iterations.csv', 'w')
-    ofile3.write('NST, JCONV, CHG, dt0, DIVF(1), DIVFrms, DT(ND), T(ND)\n')
+    ofile3.write('NST,JCONV,CHG,dt0,DIVF(1),DIVFrms,DT(ND),T(ND)\n')
     
     unused_lines = [] 
     capture = False
@@ -264,7 +264,7 @@ def parse_clima(input_file, output_directory, debug):
             info = ' '.join(info).replace('= ', '=')
             info = info.split()
 
-            new_line = '{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}\n'.format( 
+            new_line = '{0},{1},{2},{3},{4},{5},{6},{7}\n'.format( 
                                                                          float(info[0].split('=')[-1]), 
                                                                          float(info[1].split('=')[-1]),
                                                                          float(info[2].split('=')[-1]),

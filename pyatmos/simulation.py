@@ -345,6 +345,17 @@ class Simulation():
         pressure = df[df['ALT'] ==0]['P']
         return float(pressure)
 
+    #_________________________________________________________________________
+    @staticmethod
+    def get_final_clima_deviation(parsed_clima_file):
+        import pandas as pd
+        df = pd.read_csv(parsed_clima_file)
+        n_iterations = df['NST'].max()
+        new_df = df[df['NST'] == n_iterations]
+        DIVFrms = new_df['DIVFrms']
+        return float(DIVFrms)
+
+
 
 
     #_________________________________________________________________________
