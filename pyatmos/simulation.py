@@ -416,7 +416,6 @@ class Simulation():
         '''
         if self._docker_image is not None:
             self._container.exec_run(command)
-            print('generic run ... '+ command) 
         else:
             os.system(command)
 
