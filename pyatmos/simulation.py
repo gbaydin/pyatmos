@@ -108,7 +108,8 @@ class Simulation():
             species_concentrations={}, 
             max_photochem_iterations=10000, 
             max_clima_steps=500, 
-            input_file_path = None,
+            previous_photochem_solution = None,
+            previous_clima_solution = None, 
             output_directory='/Users/Will/Documents/FDL/results'
             ):
         '''
@@ -124,7 +125,8 @@ class Simulation():
                                     concentration should be fractional (not a percentage) 
             max_photochem_iterations: int, maximum number of iterations allowed by photochem to test for convergence  
             max_clima_steps: int, number of steps taken by clima (default 400) 
-            input_file_path: string, path to the previous solution for photochem 
+            previous_photochem_solution: string, path to the previous solution for photochem (the "out.dist" file, which will become the "in.dist" file)
+            previous_clima_solution: string, path to the previous clima solution (the "TempOut.dat" file, which will become the "TempIn.dat" file)
             output_directory: string, path to the directory to store outputs (on your own filesystem!!) 
         '''
 
@@ -143,7 +145,7 @@ class Simulation():
 
 
         # run the photochemical model 
-        photochem_converged = self._run_photochem(species_concentrations, max_photochem_iterations, output_directory, input_file_path)
+        photochem_converged = self._run_photochem(species_concentrations, max_photochem_iterations, output_directory, previous_photochem_solution)
 
         # if photochem didn't converge, exit 
         if not photochem_converged: 
@@ -156,7 +158,7 @@ class Simulation():
             methane_concentration = species_concentrations['CH4'] 
         else: 
             methane_concentration = 1.80E-06 
-        clima_converged = self._run_clima(max_clima_steps, output_directory, methane_concentration)
+        clima_converged = self._run_clima(max_clima_steps, output_directory, methane_concentration, previous_clima_solution)
 
         # if clima didn't converge, exit
         if not clima_converged:
@@ -202,7 +204,7 @@ class Simulation():
                 }
 
     #_________________________________________________________________________
-    def _run_photochem(self, species_concentrations, max_photochem_iterations, output_directory, input_file_path):
+    def _run_photochem(self, species_concentrations, max_photochem_iterations, output_directory, previous_photochem_solution):
         '''
         Function to actually run the photochemical model, copies the results once finished 
         '''
@@ -216,8 +218,8 @@ class Simulation():
 
         
         # put in the new in.dist file (can be from previous run of photochem)
-        if input_file_path:
-            self._write_container_file(input_file_path, self._atmos_directory+'/PHOTOCHEM/in.dist')
+        if previous_photochem_solution:
+            self._write_container_file(previous_photochem_solution, self._atmos_directory+'/PHOTOCHEM/in.dist')
 
 
         
@@ -256,14 +258,17 @@ class Simulation():
         return True 
 
     #_________________________________________________________________________
-    def _run_clima(self, max_clima_steps, output_directory, methane_concentration):
+    def _run_clima(self, max_clima_steps, output_directory, methane_concentration, previous_clima_solution):
 
 
         # Modify CLIMA/IO/TEMPLATES/ModernEarth/input_clima.dat to change NSTEPS parameter 
         # Also change IMET parameter depending on methane concentration 
 
-       
         clima_input = self._read_container_file(self._atmos_directory+'/CLIMA/IO/input_clima.dat') # clima_input: file containing strings of input_clima.dat 
+
+        # Write the new TempIn.dat file (can be from previous run of clima)
+        if previous_clima_solution:
+            self._write_container_file(previous_clima_solution, self._atmos_directory+'/CLIMA/IO/TempIn.dat')
 
         replacement_clima = [] 
         for line in clima_input:
@@ -301,6 +306,7 @@ class Simulation():
 
         # copy clima output files out of docker image  
         self._copy_container_file(self._atmos_directory+'/CLIMA/IO/clima_allout.tab', output_directory)
+        self._copy_container_file(self._atmos_directory+'/CLIMA/IO/TempOut.dat', output_directory)
 
         return True 
 
