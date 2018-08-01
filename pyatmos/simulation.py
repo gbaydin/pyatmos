@@ -130,6 +130,7 @@ class Simulation():
             output_directory: string, path to the directory to store outputs (on your own filesystem!!) 
         '''
 
+
         # make the output directory
         os.system('mkdir -p '+output_directory)
 
