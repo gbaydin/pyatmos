@@ -276,7 +276,10 @@ class Simulation():
         # Run clima 
         print('running clima with {0} steps ...'.format(max_clima_steps))
         self._clima_duration = pyatmos.util.UTC_now()
-        self._generic_run('cd {0} && ./Clima.run'.format(self._atmos_directory))
+        if self._docker_image is not None:
+            self._container.exec_run('./Clima.run')
+        else:
+            self._generic_run('cd {0} && ./Clima.run'.format(self._atmos_directory))
         self._clima_duration = pyatmos.util.UTC_now() - self._clima_duration 
         print('finished clima')
         self.debug('Clima took '+str(self._clima_duration)+' seconds')
