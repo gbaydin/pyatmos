@@ -19,6 +19,8 @@ RUN cp /code/atmos/PHOTOCHEM/INPUTFILES/TEMPLATES/ModernEarth/input_photchem.dat
 RUN cp /code/atmos/PHOTOCHEM/INPUTFILES/TEMPLATES/ModernEarth/reactions.rx /code/atmos/PHOTOCHEM/INPUTFILES/
 RUN cp /code/atmos/PHOTOCHEM/INPUTFILES/TEMPLATES/ModernEarth/parameters.inc /code/atmos/PHOTOCHEM/INPUTFILES/
 RUN cp /code/atmos/PHOTOCHEM/INPUTFILES/TEMPLATES/ModernEarth/species.dat /code/atmos/PHOTOCHEM/INPUTFILES/
+RUN echo species.dat
+RUN cat code/atmos/PHOTOCHEM/INPUTFILES/species.dat
 RUN cp /code/atmos/PHOTOCHEM/INPUTFILES/TEMPLATES/ModernEarth/PLANET.dat /code/atmos/PHOTOCHEM/INPUTFILES/
 
 RUN cd /code/atmos && make -f PhotoMake
