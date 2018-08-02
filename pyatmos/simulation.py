@@ -236,7 +236,7 @@ class Simulation():
         # modify species file, changes the concentrations inside species.dat as specified by species_concentrations
         ################################
         #self._modify_atmospheric_species(self._atmos_directory+'/PHOTOCHEM/INPUTFILES/species.dat', species_concentrations, species_fluxes) 
-        self._modify_atmospheric_species(self._atmos_directory+'PHOTOCHEM/INPUTFILES/TEMPLATES/ModernEarth/species.dat', species_concentrations, species_fluxes) 
+        self._modify_atmospheric_species(self._atmos_directory+'/PHOTOCHEM/INPUTFILES/TEMPLATES/ModernEarth/species.dat', species_concentrations, species_fluxes) 
         print('Modified species file with concentrations: {0}'.format(species_concentrations) )
         print('Modified species file with fluxes: {0}'.format(species_fluxes) )
 
