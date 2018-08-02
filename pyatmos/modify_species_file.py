@@ -35,6 +35,7 @@ def speciesfile_to_df(species_filename):
         other_df contains the other species
     '''
     import pandas as pd
+    pd.options.mode.chained_assignment = None  # default='warn' 
     counter = 0
     data = []
     columns = []
@@ -226,8 +227,9 @@ def write_species_longlived(df):
     for index, row in df.iterrows():
         new_line = format_spaced_text(11, index)
         for col in  ['LONG-LIVED', 'O', 'H', 'C', 'S', 'N', 'CL', 'LBOUND', 'VDEP0', 'FIXEDMR', 'SGFLUX', 'DISTH', 'MBOUND', 'SMFLUX', 'VEFF0']: 
-            #print(type(spacing[col]), spacing[col], type(row[col]), row[col] )
             new_line += format_spaced_text( spacing[col], str(row[col]) )
+            #new_line += format_spaced_text( spacing[col], df.at[index, col] )
+
         new_text += new_line+'\n'
 
     return new_text
@@ -249,6 +251,7 @@ def write_species_other(df):
         new_line += format_spaced_text(4, row['LONG-LIVED'])
         for col in ['O', 'H', 'C', 'S', 'N', 'CL']:
             new_line += format_spaced_text(2, row[col])
+            #new_line += format_spaced_text(2, df.at[index, col])
         new_text += new_line+'\n'
 
     # write inert species
@@ -259,6 +262,7 @@ def write_species_other(df):
         new_line += format_spaced_text(4, row['LONG-LIVED'])
         for col in ['O', 'H', 'C', 'S', 'N']:
             new_line += format_spaced_text(2, row[col])
+            #new_line += format_spaced_text(2, df.at[index, col])
         new_line += format_spaced_text(5, row['CL'])
         new_line += format_spaced_text(6, row['FIXEDMR'])
         new_text += new_line+'\n'
