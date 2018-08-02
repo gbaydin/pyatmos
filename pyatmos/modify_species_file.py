@@ -36,10 +36,9 @@ def speciesfile_to_df(species_filename):
     '''
     import pandas as pd
     counter = 0
-    file_name = '/Users/Will/Documents/FDL/results/run2/species.dat'
     data = []
     columns = []
-    with open(file_name, 'r') as file:
+    with open(species_filename, 'r') as file:
         for line in file.readlines():
             line = line.rstrip('\n\r')
             line = ' '.join(line.split())
@@ -240,7 +239,6 @@ def write_species_other(df):
 
     # write short-lived species 
     short_lived_df = df[df['LONG-LIVED'] == 'SL']
-    print(short_lived_df)
     new_text += '*   SHORT-LIVED SPECIES\n'
     for index, row in short_lived_df.iterrows():
         new_line = format_spaced_text(11, index)

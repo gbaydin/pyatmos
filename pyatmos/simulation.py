@@ -199,8 +199,12 @@ class Simulation():
         return 'success' 
 
     #_________________________________________________________________________
-    def write_metadata(self, output_path):
+    def write_metadata(self, output_path, extra_information = {}):
         metadata = self.get_metadata()
+
+        # merge dictionaries 
+        if extra_information:
+            metadata = { **metadata, **extra_information }  
         with open(output_path, 'w') as fp:
             json.dump(metadata, fp, sort_keys=True, indent=4)
 
