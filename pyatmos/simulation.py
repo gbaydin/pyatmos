@@ -139,11 +139,13 @@ class Simulation():
 
         # check the input species dictionaries 
         concentration_keys = species_concentrations.keys()
-        flux_keys = species_concentrations.keys()
-        overlapping_species = set(concentration_keys) & set(flux_keys)
+        flux_keys          = species_fluxes.keys()
+        overlapping_species = set(flux_keys).intersection( set( concentration_keys) )
         if (overlapping_species):
             print ("ERROR: cannot modify the flux AND the concentration for the same species. Problem for species: {0}".format(overlapping_species)) 
             raise RuntimeError
+        if flux_keys and concentration_keys:
+            print('Will attempt to modify species file with fluxes {0} and concentrations {1}'.format(species_fluxes, species_concentrations))
         
 
 
@@ -582,5 +584,5 @@ class Simulation():
     def close(self):
         print('Exiting...')
         if (self._container is not None) and (self._docker_image is not None):
-            print('Container killed.')
+            print('Container {0} killed.'.format(self._container.name))
             self._container.kill()
