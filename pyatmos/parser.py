@@ -1,4 +1,5 @@
 
+#_____________________________________________________________________________
 def parse_photochem(input_file, output_directory, debug):
 
     ph_file = open(input_file, 'r')
@@ -145,6 +146,7 @@ def parse_photochem(input_file, output_directory, debug):
 
 
 
+#_____________________________________________________________________________
 def check_float_conversion(li):
     '''
     Takes a list of strings (where each string represents a number)
@@ -183,6 +185,7 @@ def check_float_conversion(li):
     return new_list 
 
 
+#_____________________________________________________________________________
 def concatenate_tables(tables):
     '''
     Method to concatenate a set of tables by "Z" value. Assumes tables are in the same ordering 
@@ -199,6 +202,7 @@ def concatenate_tables(tables):
     return results 
 
 
+#_____________________________________________________________________________
 def table_to_dataframe(table):
     '''
     Convert table into pandas dataframe 
@@ -224,6 +228,7 @@ def table_to_dataframe(table):
         df[col]=df[col].astype(np.number)
     '''
 
+#_____________________________________________________________________________
 def parse_clima(input_file, output_directory, debug):
 
     # Define the "boxing" used in the clima output file

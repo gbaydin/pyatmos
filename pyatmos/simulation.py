@@ -106,6 +106,7 @@ class Simulation():
     #_________________________________________________________________________
     def run(self, 
             species_concentrations={}, 
+            species_fluxes={},
             max_photochem_iterations=10000, 
             max_clima_steps=500, 
             previous_photochem_solution = None,
@@ -123,12 +124,27 @@ class Simulation():
             species_concentrations: dictionary of species and concentrations to change them to, formatted as 
                                     { 'species name' : concentration (float) }
                                     concentration should be fractional (not a percentage) 
+                                    Note that the species must be different from those specified in species_fluxes
+            species_fluxes: dictionary of species and fluxes. These values will overwrite the defaults in species.dat
+                                    The dictionary is formatted as:
+                                    { 'species name' : flux (float) }
+                                    fluxes should be in molecues/s/cm^2   
+                                    Note that the species must be different from those specified in species_concentrations
             max_photochem_iterations: int, maximum number of iterations allowed by photochem to test for convergence  
             max_clima_steps: int, number of steps taken by clima (default 400) 
             previous_photochem_solution: string, path to the previous solution for photochem (the "out.dist" file, which will become the "in.dist" file)
             previous_clima_solution: string, path to the previous clima solution (the "TempOut.dat" file, which will become the "TempIn.dat" file)
             output_directory: string, path to the directory to store outputs (on your own filesystem!!) 
         '''
+
+        # check the input species dictionaries 
+        concentration_keys = species_concentrations.keys()
+        flux_keys = species_concentrations.keys()
+        overlapping_species = set(concentration_keys) & set(flux_keys)
+        if (overlapping_species):
+            print ("ERROR: cannot modify the flux AND the concentration for the same species. Problem for species: {0}".format(overlapping_species)) 
+            raise RuntimeError
+        
 
 
         # make the output directory
@@ -146,7 +162,7 @@ class Simulation():
 
 
         # run the photochemical model 
-        photochem_converged = self._run_photochem(species_concentrations, max_photochem_iterations, output_directory, previous_photochem_solution)
+        photochem_converged = self._run_photochem(species_concentrations, species_fluxes, max_photochem_iterations, output_directory, previous_photochem_solution)
 
         # if photochem didn't converge, exit 
         if not photochem_converged: 
@@ -205,7 +221,7 @@ class Simulation():
                 }
 
     #_________________________________________________________________________
-    def _run_photochem(self, species_concentrations, max_photochem_iterations, output_directory, previous_photochem_solution):
+    def _run_photochem(self, species_concentrations, species_fluxes, max_photochem_iterations, output_directory, previous_photochem_solution):
         '''
         Function to actually run the photochemical model, copies the results once finished 
         '''
@@ -213,7 +229,7 @@ class Simulation():
         ################################
         # modify species file, changes the concentrations inside species.dat as specified by species_concentrations
         ################################
-        self._modify_atmospheric_species(self._atmos_directory+'/PHOTOCHEM/INPUTFILES/species.dat', species_concentrations) 
+        self._modify_atmospheric_species(self._atmos_directory+'/PHOTOCHEM/INPUTFILES/species.dat', species_concentrations, species_fluxes) 
         print('Modified species file with:')
         print(species_concentrations)
 
@@ -325,6 +341,8 @@ class Simulation():
         Return the surface temperature in Kelvin [K] from the processed clima output 
         Args:
             parsed_clima_file: a processed clima file in csv format
+        Returns:
+            temperature at the surface in Kelvin
         '''
         import pandas as pd 
         df = pd.read_csv(parsed_clima_file)
@@ -339,6 +357,8 @@ class Simulation():
         Return the surface pressure in [bar] from the processed clima output
         Args:
             parsed_clima_file: a processed clima file in csv format
+        Returns:
+            pressure at the surface in bar
         '''
         import pandas as pd
         df = pd.read_csv(parsed_clima_file)
@@ -356,8 +376,6 @@ class Simulation():
         return float(DIVFrms)
 
 
-
-
     #_________________________________________________________________________
     def print_run_metadata(self):
         '''
@@ -367,36 +385,41 @@ class Simulation():
         print('Clima duration {0}'.format(self._clima_duration))
 
 
-
     #_________________________________________________________________________
-    def _modify_atmospheric_species(self, species_file_name, species_concentrations):
+    def _modify_atmospheric_species(self, old_species_filename, species_concentrations, species_fluxes):
         '''
         Modify the species file (species_file_name) to find-and-replace the concentrations listed in species_concentrations
         Copies the files out of the docker image, modifies them, and then puts them back 
         Args:
-            species_file_name: string, path to species file inside the docker image
+            old_species_filename: string, path to species file inside the docker image
             species_concentrations: dictionary, containing species' concentrations' to modify
+            species_fluxes: dictionary, containing species' fluxes to modify 
         '''
-        
-        # Parse existing species file 
+
+        # copy existing species file
         tmp_input_file_name = tempfile.NamedTemporaryFile().name
-        self._copy_container_file( species_file_name, tmp_input_file_name )
-        [long_lived_species, short_lived_species, inert_species, other_species] = pyatmos.modify_species_file.parse_species(tmp_input_file_name)
+        self._copy_container_file( old_species_filename, tmp_input_file_name )
+        
+        # parse existing species file
+        longlived_df, other_df = pyatmos.modify_species_file.speciesfile_to_df(tmp_input_file_name)
 
-        # Reswrite species file
-        tmp_output_file_name = tempfile.NamedTemporaryFile().name
-        ofile = open(tmp_output_file_name, 'w')
+        # modify the species dataframes with the new concentrations and fluxes 
+        longlived_df = pyatmos.modify_species_file.modify_flux(longlived_df, species_fluxes)
+        longlived_df = pyatmos.modify_species_file.modify_concentrations(longlived_df, species_concentrations)
+
+        other_df = pyatmos.modify_species_file.modify_flux(other_df, species_fluxes)
+        other_df = pyatmos.modify_species_file.modify_concentrations(other_df, species_concentrations)
+
+        # write the new species file 
+        new_species_filename = tempfile.NamedTemporaryFile().name
+        ofile = open(new_species_filename, 'w')
         ofile.write( pyatmos.modify_species_file.species_header() ) 
-
-        ofile.write( pyatmos.modify_species_file.write_species_long_lived(long_lived_species,   species_concentrations) )
-        ofile.write( pyatmos.modify_species_file.write_species_short_lived(short_lived_species, species_concentrations) )
-        ofile.write( pyatmos.modify_species_file.write_species_inert(inert_species,             species_concentrations) )
-        ofile.write( pyatmos.modify_species_file.write_species_other(other_species,             species_concentrations) )
-
-        ofile.close() 
+        ofile.write( pyatmos.modify_species_file.write_species_longlived( longlived_df ))
+        ofile.write( pyatmos.modify_species_file.write_species_other( other_df ))
+        ofile.close()
 
         # Over-write the species file 
-        self._write_container_file(tmp_output_file_name, species_file_name) 
+        self._write_container_file(new_species_filename, old_species_filename) 
     
 
     #_________________________________________________________________________
