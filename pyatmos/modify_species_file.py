@@ -43,6 +43,10 @@ def speciesfile_to_df(species_filename):
             line = line.rstrip('\n\r')
             line = ' '.join(line.split())
 
+            # strip away "!*" 
+            if '!' in line:
+                line = line.split('!')[0]
+
             # deal with the column headings
             if 'LONG-LIVED' in line:
 
