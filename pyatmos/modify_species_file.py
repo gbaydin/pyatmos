@@ -3,7 +3,7 @@ def modify_flux(df, fluxes, format=True):
     for species, flux in fluxes.items():
         df.at[species, 'LBOUND'] = 3
         if format:
-            df.at[species, 'SGFLUX'] = '{:.1E}'.format(flux)
+            df.at[species, 'SGFLUX'] = '{:.3E}'.format(flux)
         else:
             df.at[species, 'SGFLUX'] = flux
     return df
@@ -13,7 +13,7 @@ def modify_concentrations(df, concentrations, format=True):
     for species, conc in concentrations.items():
         df.at[species, 'LBOUND'] = 2
         if format:
-            df.at[species, 'FIXEDMR'] = '{:.1E}'.format(conc)
+            df.at[species, 'FIXEDMR'] = '{:.3E}'.format(conc)
         else:
             df.at[species, 'FIXEDMR'] = conc
     return df
@@ -211,8 +211,8 @@ def write_species_longlived(df):
             'CL': 5,
             'LBOUND' : 6, 
             'VDEP0': 8,
-            'FIXEDMR': 8,
-            'SGFLUX': 10,
+            'FIXEDMR': 10,
+            'SGFLUX': 12,
             'DISTH': 8,
             'MBOUND': 7,
             'SMFLUX': 8,
@@ -258,7 +258,7 @@ def write_species_other(df):
         for col in ['O', 'H', 'C', 'S', 'N']:
             new_line += format_spaced_text(2, row[col])
         new_line += format_spaced_text(5, row['CL'])
-        new_line += format_spaced_text(4, row['FIXEDMR'])
+        new_line += format_spaced_text(6, row['FIXEDMR'])
         new_text += new_line+'\n'
 
     # write other species

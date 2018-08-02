@@ -165,8 +165,8 @@ class Simulation():
         photochem_converged = self._run_photochem(species_concentrations, species_fluxes, max_photochem_iterations, output_directory, previous_photochem_solution)
 
         # if photochem didn't converge, exit 
-        if not photochem_converged: 
-            return 'photochem_error' 
+        if photochem_converged != 'success': 
+            return photochem_converged
         else:
             print('photochem converged')
 
@@ -251,10 +251,14 @@ class Simulation():
         self._photochem_duration = pyatmos.util.UTC_now() - self._photochem_duration 
 
         # check for convergence of photochem   
-        [photochem_converged, n_photochem_iterations] = self._check_photochem_convergence(max_photochem_iterations)
+        try:
+            [photochem_converged, n_photochem_iterations] = self._check_photochem_convergence(max_photochem_iterations)
+        except IndexError:
+            return 'photochem_error'
+
         self._n_photochem_iterations = n_photochem_iterations 
         if not photochem_converged:
-            return False
+            return 'photochem_nonconverged'
 
         print('photochem finished after {0} iterations'.format(n_photochem_iterations))
         self.debug('photochem took {0} seconds'.format(self._photochem_duration))
@@ -272,7 +276,7 @@ class Simulation():
         # copy photochem results inside the docker image, ready for the next run of photochem 
         self._generic_run("cp  {0}/PHOTOCHEM/OUTPUT/out.dist /PHOTOCHEM/in.dist.".format(self._atmos_directory))
 
-        return True 
+        return 'success' 
 
     #_________________________________________________________________________
     def _run_clima(self, max_clima_steps, output_directory, methane_concentration, previous_clima_solution):
