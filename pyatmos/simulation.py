@@ -250,6 +250,7 @@ class Simulation():
         # Run photochem 
         ################################
         self._photochem_duration = pyatmos.util.UTC_now()
+        print('About to run photochem ... ')
         if self._docker_image is not None:
             self._container.exec_run('./Photo.run')
         else:
