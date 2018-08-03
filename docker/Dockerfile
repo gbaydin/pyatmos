@@ -24,3 +24,6 @@ RUN cd /code/atmos && make -f PhotoMake && ./Photo.run
 
 # Compile and run clima 
 RUN cd /code/atmos && make -f ClimaMake && ./Clima.run
+
+# Make sure we're in the root directory 
+RUN cd
