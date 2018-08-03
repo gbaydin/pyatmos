@@ -95,10 +95,10 @@ class Simulation():
 
     #_________________________________________________________________________
     def start(self):
+        self._start_time = pyatmos.util.UTC_now()
         if self._docker_image is not None:
             print('Starting Docker container...')
             self._container = self._docker_client.containers.run(self._docker_image, detach=True, tty=True)
-            self._start_time = pyatmos.util.UTC_now()
             print("Container '{0}' running at {1}.".format(self._container.name, format_datetime(self._start_time) ))
         else:
             print('pyatmos is ready to go! ')
