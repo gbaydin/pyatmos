@@ -29,13 +29,11 @@ class Simulation():
             docker_image=None, # 'registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', 
             code_path=None,
             DEBUG=False, 
-            atmos_directory = '/code/atmos',
-            gcs_bucket=None):
+            atmos_directory = '/code/atmos'):
         '''
         docker_image: string (optional). If specified, pyatmos will communicate with a docker image, otherwise use the code_path 
         code_path: string (optional). If specified, pyatmos will communicate witha local version of atmos. The string is the path to the atmos directory 
         DEBUG: bool, if set to true, extra debug messages are printed
-        gcs_bucket: string, name of gcs bucket 
         '''
 
         # get input arguments
@@ -43,7 +41,6 @@ class Simulation():
         self._code_path       = code_path
         self._debug           = DEBUG
         self._atmos_directory = atmos_directory
-        self._gcs_bucket      = gcs_bucket
 
         # check if properly initialsed
         if (self._docker_image is not None) and (self._code_path is not None):
@@ -58,11 +55,9 @@ class Simulation():
         else:
             self._atmos_directory = self._code_path 
 
-        # test if GCS bucket is enabled  
-        if gcs_bucket is not None:
-            self._gcs_enabled = True 
-        else:
-            self._gcs_enabled = False 
+        # initialize other runtime variables
+        self._save_logfiles = False
+        self._container = None
 
         # metadata for runtime 
         self._start_time         = 0
@@ -76,7 +71,6 @@ class Simulation():
         self._species_concentrations = None
         self._max_photochem_iterations = None
         self._max_clima_steps = None
-
 
         # other run metadata
         self._n_photochem_iterations = None 
@@ -111,7 +105,8 @@ class Simulation():
             max_clima_steps=500, 
             previous_photochem_solution = None,
             previous_clima_solution = None, 
-            output_directory='/Users/Will/Documents/FDL/results'
+            output_directory='/Users/Will/Documents/FDL/results',
+            save_logfiles = False
             ):
         '''
         Configures and runs ATMOS, then collects the output.  
@@ -135,6 +130,7 @@ class Simulation():
             previous_photochem_solution: string, path to the previous solution for photochem (the "out.dist" file, which will become the "in.dist" file)
             previous_clima_solution: string, path to the previous clima solution (the "TempOut.dat" file, which will become the "TempIn.dat" file)
             output_directory: string, path to the directory to store outputs (on your own filesystem!!) 
+            save_logfiles: bool, if True, the output of clima and photochem will be saved to a logfile and written to the output directory
         '''
 
         # check the input species dictionaries 
@@ -153,6 +149,7 @@ class Simulation():
         os.system('mkdir -p '+output_directory)
 
         # set metadata
+        self._save_logfiles = save_logfiles 
         self._species_concentrations = species_concentrations 
         self._max_photochem_iterations = max_photochem_iterations
         self._max_clima_steps = max_clima_steps 
@@ -255,7 +252,10 @@ class Simulation():
         if self._docker_image is not None:
             self._container.exec_run('./Photo.run')
         else:
-            self._generic_run('cd {0} && ./Photo.run'.format(self._atmos_directory))
+            if self._save_logfiles:
+                self._generic_run('cd {0} && ./Photo.run > {1}/Photo.log'.format(self._atmos_directory, output_directory))
+            else:
+                self._generic_run('cd {0} && ./Photo.run'.format(self._atmos_directory))
         self._photochem_duration = pyatmos.util.UTC_now() - self._photochem_duration 
 
         # check for convergence of photochem   
@@ -333,7 +333,10 @@ class Simulation():
         if self._docker_image is not None:
             self._container.exec_run('./Clima.run')
         else:
-            self._generic_run('cd {0} && ./Clima.run'.format(self._atmos_directory))
+            if self._save_logfiles:
+                self._generic_run('cd {0} && ./Clima.run > {1}/Clima.log'.format(self._atmos_directory, output_directory))
+            else:
+                self._generic_run('cd {0} && ./Clima.run'.format(self._atmos_directory))
         self._clima_duration = pyatmos.util.UTC_now() - self._clima_duration 
         print('finished clima')
         self.debug('Clima took '+str(self._clima_duration)+' seconds')
