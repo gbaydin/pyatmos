@@ -220,7 +220,8 @@ class Simulation():
                 'atmos_run_duraton' : self._run_time_end - self._run_time_start,
                 'input_max_clima_iterations' : self._max_clima_steps,
                 'input_max_photochem_iterations' : self._max_photochem_iterations,
-                'input_species_concentrations' : self._species_concentrations 
+                'input_species_concentrations' : self._species_concentrations,
+                'write_logfiles' : self._save_logfiles
                 }
 
     #_________________________________________________________________________
