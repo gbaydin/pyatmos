@@ -194,6 +194,7 @@ class Simulation():
                                     debug=self._debug )
 
         
+        print('Running finished.')
 
         return 'success' 
 
@@ -287,6 +288,8 @@ class Simulation():
         # Internal copy of photochem results inside the docker image, ready for the next run of photochem 
         self._generic_run("cp  {0}/PHOTOCHEM/OUTPUT/out.dist {0}/PHOTOCHEM/in.dist".format(self._atmos_directory))
 
+        print('Run photochem finished')
+
         return 'success' 
 
     #_________________________________________________________________________
@@ -351,7 +354,29 @@ class Simulation():
         self._copy_container_file(self._atmos_directory+'/CLIMA/IO/TempOut.dat', output_directory) # potentially needed for next run
         self._copy_container_file(self._atmos_directory+'/CLIMA/IO/TempIn.dat', output_directory) # keep for debugging purposes 
 
+        print('Running clima finished')
+
         return True 
+
+
+    @staticmethod
+    def split_dict(input_dict, species='N2'):
+        '''
+        Splits the input dictionary into two by taking out the 'species' element from the input dictionary and putting that into a new one
+        Args:
+            input_dict: dictionary
+            species: key, a key that is inside the input_dictionary
+        Returns
+            input_dict: dictionary, a dictionary with the "species" element removed
+            separated_dict: dictionary, a dictionary containing the removed element {species : value}
+        '''
+
+        try:
+            value = input_dict.pop(species)
+            separated_dict = {species : value}
+        except KeyError:
+            separated_dict = {}
+        return input_dict, separated_dict
 
 
     #_________________________________________________________________________
@@ -416,6 +441,11 @@ class Simulation():
             species_fluxes: dictionary, containing species' fluxes to modify 
         '''
 
+        # sort-out the species_concentrations and species_fluxes dictionary to make sure 'N2' if it is present is in a separate dictionary
+        ll_concentrations, sl_concentrations = split_dict(species_concentrations, 'N2')
+        ll_fluxes, sl_fluxes                 = split_dict(species_fluxes, 'N2')
+        
+
         # copy existing species file
         tmp_input_file_name = tempfile.NamedTemporaryFile().name
         self._copy_container_file( old_species_filename, tmp_input_file_name )
@@ -424,11 +454,11 @@ class Simulation():
         longlived_df, other_df = pyatmos.modify_species_file.speciesfile_to_df(tmp_input_file_name)
 
         # modify the species dataframes with the new concentrations and fluxes 
-        longlived_df = pyatmos.modify_species_file.modify_flux(longlived_df, species_fluxes)
-        longlived_df = pyatmos.modify_species_file.modify_concentrations(longlived_df, species_concentrations)
+        longlived_df = pyatmos.modify_species_file.modify_flux(longlived_df, ll_fluxes)
+        longlived_df = pyatmos.modify_species_file.modify_concentrations(longlived_df, ll_concentrations)
 
-        other_df = pyatmos.modify_species_file.modify_flux(other_df, species_fluxes)
-        other_df = pyatmos.modify_species_file.modify_concentrations(other_df, species_concentrations)
+        other_df = pyatmos.modify_species_file.modify_flux(other_df, sl_fluxes)
+        other_df = pyatmos.modify_species_file.modify_concentrations(other_df, sl_concentrations)
 
         # write the new species file 
         new_species_filename = tempfile.NamedTemporaryFile().name

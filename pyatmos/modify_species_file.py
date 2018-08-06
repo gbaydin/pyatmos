@@ -1,5 +1,7 @@
 #_____________________________________________________________________________
 def modify_flux(df, fluxes, format=True):
+
+    # loop over dictionary of fluxes to change
     for species, flux in fluxes.items():
         df.at[species, 'LBOUND'] = 2
         if format:
