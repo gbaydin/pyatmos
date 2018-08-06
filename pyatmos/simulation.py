@@ -98,6 +98,26 @@ class Simulation():
             print('pyatmos is ready to go! ')
 
     #_________________________________________________________________________
+    @staticmethod
+    def split_dictionary(input_dict, species='N2'):
+        '''
+        Splits the input dictionary into two by taking out the 'species' element from the input dictionary and putting that into a new one
+        Args:
+            input_dict: dictionary
+            species: key, a key that is inside the input_dictionary
+        Returns
+            input_dict: dictionary, a dictionary with the "species" element removed
+            separated_dict: dictionary, a dictionary containing the removed element {species : value}
+        '''
+
+        try:
+            value = input_dict.pop(species)
+            separated_dict = {species : value}
+        except KeyError:
+            separated_dict = {}
+        return input_dict, separated_dict
+
+    #_________________________________________________________________________
     def run(self, 
             species_concentrations={}, 
             species_fluxes={},
@@ -359,24 +379,6 @@ class Simulation():
         return True 
 
 
-    @staticmethod
-    def split_dict(input_dict, species='N2'):
-        '''
-        Splits the input dictionary into two by taking out the 'species' element from the input dictionary and putting that into a new one
-        Args:
-            input_dict: dictionary
-            species: key, a key that is inside the input_dictionary
-        Returns
-            input_dict: dictionary, a dictionary with the "species" element removed
-            separated_dict: dictionary, a dictionary containing the removed element {species : value}
-        '''
-
-        try:
-            value = input_dict.pop(species)
-            separated_dict = {species : value}
-        except KeyError:
-            separated_dict = {}
-        return input_dict, separated_dict
 
 
     #_________________________________________________________________________
@@ -442,8 +444,8 @@ class Simulation():
         '''
 
         # sort-out the species_concentrations and species_fluxes dictionary to make sure 'N2' if it is present is in a separate dictionary
-        ll_concentrations, sl_concentrations = split_dict(species_concentrations, 'N2')
-        ll_fluxes, sl_fluxes                 = split_dict(species_fluxes, 'N2')
+        ll_concentrations, sl_concentrations = self.split_dictionary(species_concentrations, 'N2')
+        ll_fluxes, sl_fluxes                 = self.split_dictionary(species_fluxes, 'N2')
         
 
         # copy existing species file
