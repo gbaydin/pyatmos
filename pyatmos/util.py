@@ -1,5 +1,6 @@
 import re
 
+#____________________________________________________________________________
 def read_file(file_name):
     with open(file_name, 'r') as file:
         ret = {}
@@ -17,6 +18,7 @@ def read_file(file_name):
                     ret[key] = val
     return ret
 
+#____________________________________________________________________________
 def UTC_now():
     '''
     Return int of unix time (in UTC) to nearest second
@@ -27,6 +29,7 @@ def UTC_now():
     unixtime = calendar.timegm(d.utctimetuple())
     return unixtime 
 
+#____________________________________________________________________________
 def strings_file(file_name):
     li = []
     with open(file_name, 'r') as file:

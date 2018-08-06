@@ -24,6 +24,7 @@ def format_datetime(unix_timestamp):
     ).strftime('%Y-%m-%d %H:%M:%S')
 
 
+#_________________________________________________________________________
 class Simulation():
     def __init__(self, 
             docker_image=None, # 'registry.gitlab.com/frontierdevelopmentlab/astrobiology/pyatmos', 
@@ -58,6 +59,7 @@ class Simulation():
         # initialize other runtime variables
         self._save_logfiles = False
         self._container = None
+        self._run_iteration_call = None
 
         # metadata for runtime 
         self._start_time         = 0
@@ -126,6 +128,7 @@ class Simulation():
             previous_photochem_solution = None,
             previous_clima_solution = None, 
             output_directory='/Users/Will/Documents/FDL/results',
+            run_iteration_call = None,
             save_logfiles = False
             ):
         '''
@@ -169,6 +172,7 @@ class Simulation():
         os.system('mkdir -p '+output_directory)
 
         # set metadata
+        self._run_iteration_call = run_iteration_call
         self._save_logfiles = save_logfiles 
         self._species_concentrations = species_concentrations 
         self._max_photochem_iterations = max_photochem_iterations
@@ -242,7 +246,8 @@ class Simulation():
                 'input_max_clima_iterations' : self._max_clima_steps,
                 'input_max_photochem_iterations' : self._max_photochem_iterations,
                 'input_species_concentrations' : self._species_concentrations,
-                'write_logfiles' : self._save_logfiles
+                'write_logfiles' : self._save_logfiles,
+                'run_iteration_call' : self._run_iteration_call
                 }
 
     #_________________________________________________________________________

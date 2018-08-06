@@ -25,6 +25,7 @@ for it in range(0, ITERATIONS):
         'max_photochem_iterations' : 10000, 
         'max_clima_steps' : 2, 
         'output_directory' : '/Users/Will/Documents/FDL/results/run_{1}_{0}'.format(it, OVERALL_RUN),
+        'run_iteration_call' : it
     }
     if it > 0:
         args['previous_photochem_solution'] = '/Users/Will/Documents/FDL/results/run_{1}_{0}/out.dist'.format(it-1, OVERALL_RUN)
@@ -36,5 +37,8 @@ for it in range(0, ITERATIONS):
     print('\n\nNEXT ITERATION..\n\n')
 
 
-data = atmos.get_metadata() 
+    data = atmos.get_metadata() 
+    print(data)
+    print('')
+
 atmos.exit()
