@@ -254,7 +254,7 @@ class Simulation():
             self._container.exec_run('./Photo.run')
         else:
             if self._save_logfiles:
-                self._generic_run('cd {0} && ./Photo.run > {1}/Photo.log'.format(self._atmos_directory, output_directory))
+                self._generic_run('cd {0} && ./Photo.run > {1}/Photo_log.txt'.format(self._atmos_directory, output_directory))
             else:
                 self._generic_run('cd {0} && ./Photo.run'.format(self._atmos_directory))
         self._photochem_duration = pyatmos.util.UTC_now() - self._photochem_duration 
@@ -339,7 +339,7 @@ class Simulation():
             self._container.exec_run('./Clima.run')
         else:
             if self._save_logfiles:
-                self._generic_run('cd {0} && ./Clima.run > {1}/Clima.log'.format(self._atmos_directory, output_directory))
+                self._generic_run('cd {0} && ./Clima.run > {1}/Clima_log.txt'.format(self._atmos_directory, output_directory))
             else:
                 self._generic_run('cd {0} && ./Clima.run'.format(self._atmos_directory))
         self._clima_duration = pyatmos.util.UTC_now() - self._clima_duration 
