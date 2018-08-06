@@ -277,13 +277,15 @@ class Simulation():
         # copy photochem results
         ################################
 
+        print('Copying photochem results to {0}'.format(output_directory))
         self._copy_container_file(self._atmos_directory+'/PHOTOCHEM/OUTPUT/out.out', output_directory)
         self._copy_container_file(self._atmos_directory+'/PHOTOCHEM/OUTPUT/out.dist', output_directory) 
         self._copy_container_file(self._atmos_directory+'/PHOTOCHEM/INPUTFILES/species.dat', output_directory)
-        self._copy_container_file(self._atmos_directory+'/PHOTOCHEM/in.dist', output_directory) 
+        # this command may not work if photochem has not been run before? 
+        self._copy_container_file(self._atmos_directory+'/PHOTOCHEM/in.dist', output_directory) # save the "in.dist" file that _was_ used for the next run 
 
-        # copy photochem results inside the docker image, ready for the next run of photochem 
-        self._generic_run("cp  {0}/PHOTOCHEM/OUTPUT/out.dist /PHOTOCHEM/in.dist.".format(self._atmos_directory))
+        # Internal copy of photochem results inside the docker image, ready for the next run of photochem 
+        self._generic_run("cp  {0}/PHOTOCHEM/OUTPUT/out.dist {0}/PHOTOCHEM/in.dist".format(self._atmos_directory))
 
         return 'success' 
 
@@ -311,7 +313,9 @@ class Simulation():
             if 'NSTEPS=' in line:
                 line = 'NSTEPS=    {0}           !step number (200 recommended for coupling)\n'.format(max_clima_steps)
             if 'IMET=' in line and methane_concentration > 1e-4:
-                line = 'IMET=      {0}\n'.format(1)
+                line = 'IMET=      1\n'
+            if 'IUP=' in line:
+                line = 'IUP=       0\n' 
             replacement_clima.append(line)
         tmp_file_name = tempfile.NamedTemporaryFile().name
         tmp_file = open(tmp_file_name, 'w')
@@ -321,7 +325,7 @@ class Simulation():
         self._write_container_file(tmp_file_name, self._atmos_directory+'/CLIMA/IO/input_clima.dat')
 
         # Set "IUP=       0" in /CLIMA/IO/input_clima.dat 
-        self._generic_run("sed -i 's/IUP=       1/IUP=       0/g' {0}/CLIMA/IO/input_clima.dat".format(self._atmos_directory))
+        #self._generic_run("sed -i 's/IUP=       1/IUP=       0/g' {0}/CLIMA/IO/input_clima.dat".format(self._atmos_directory))
 
 
 
@@ -527,7 +531,8 @@ class Simulation():
 
         if self._debug: 
             caller_name = inspect.stack()[1][3]
-            print('DEBUG {0}: {1}'.format(caller_name, command))
+            debug_message = '{0}(): {1}'.format(caller_name, command)
+            print(pyatmos.util.printcol(debug_message, 'yellow'))
 
 
 
@@ -540,7 +545,8 @@ class Simulation():
         '''
         if self._debug: 
             caller_name = inspect.stack()[1][3]
-            print('DEBUG {0}: {1}'.format(caller_name,message))
+            debug_message = '{0}(): {1}'.format(caller_name,message)
+            print(pyatmos.util.printcol(debug_message, 'yellow'))
 
 
 

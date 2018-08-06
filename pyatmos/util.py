@@ -34,5 +34,66 @@ def strings_file(file_name):
             li.append(line)
     return li 
 
+#____________________________________________________________________________
+def printcol(text, fgcol='white', style='normal', bgcol='none'):
+    '''
+    Returns input text with some colour and style formatting 
+    '''
+    fgcols = {
+        'dgrey':   2,
+        'ddgrey':  8,
+
+        'black':   30,
+        'dred':    31,
+        'dgreen':  32,
+        'dyellow': 33,
+        'dblue':   34,
+        'dpink' :  35,
+        'dcyan':   36,
+
+        'pgrey':   37,
+        'white':   38,
+
+        'grey':    90,
+        'red':     91,
+        'green':   92,
+        'yellow':  93,
+        'blue':    94,
+        'pink' :   95,
+        'cyan':    96,
+        }
+
+
+    bgcols = {
+        'none':    40,
+        'red':     41,
+        'green':   42,
+        'yellow':  43,
+        'blue':    44,
+        'pink' :   45,
+        'cyan':    46,
+        'grey':    47,
+        }
+
+
+    styles = {
+        'normal': 0,
+        'bold': 1,
+        'faded': 2,
+        'underlined': 4,
+        'flashing': 5,
+        'fgbgrev': 7,
+        'invisible': 8,
+        }
+
+    st = styles[style]
+    fg = fgcols[fgcol]
+    bg = bgcols[bgcol]
+
+    format = ';'.join([str(st), str(fg), str(bg)])
+    colstring = '\x1b[%sm%s\x1b[0m' % (format, text) 
+    return colstring
+
+
 
 
