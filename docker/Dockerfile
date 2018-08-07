@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 # dummy command for docker 
-RUN echo hello world
+RUN echo hello world 2
 
 # Get ATMOS
 RUN mkdir /code/ && cd /code/ && git clone https://gitlab.com/frontierdevelopmentlab/astrobiology/atmos.git
