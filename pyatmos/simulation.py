@@ -165,8 +165,6 @@ class Simulation():
             raise RuntimeError
         if flux_keys and concentration_keys:
             print('Will attempt to modify species file with fluxes {0} and concentrations {1}'.format(species_fluxes, species_concentrations))
-        
-
 
         # make the output directory
         os.system('mkdir -p '+output_directory)
@@ -295,8 +293,7 @@ class Simulation():
         if not photochem_converged:
             return 'photochem_nonconverged'
 
-        print('photochem finished after {0} iterations'.format(n_photochem_iterations))
-        self.debug('photochem took {0} seconds'.format(self._photochem_duration))
+        print('photochem finished after {0} iterations and took {1} seconds'.format(n_photochem_iterations, self._photochem_duration))
 
 
         ################################
@@ -371,8 +368,7 @@ class Simulation():
             else:
                 self._generic_run('cd {0} && ./Clima.run'.format(self._atmos_directory))
         self._clima_duration = pyatmos.util.UTC_now() - self._clima_duration 
-        print('finished clima')
-        self.debug('Clima took '+str(self._clima_duration)+' seconds')
+        print('finished clima after {0} seconds'.format(self._clima_duration))
 
         # copy clima output files out of docker image  
         self._copy_container_file(self._atmos_directory+'/CLIMA/IO/clima_allout.tab', output_directory)
