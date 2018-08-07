@@ -375,6 +375,7 @@ class Simulation():
         self._copy_container_file(self._atmos_directory+'/CLIMA/IO/TempOut.dat', output_directory) # potentially needed for next run
         self._copy_container_file(self._atmos_directory+'/CLIMA/IO/TempIn.dat', output_directory) # keep for debugging purposes 
         self._copy_container_file(self._atmos_directory+'/COUPLE/mixing_ratios.dat', output_directory)  
+        self._copy_container_file(self._atmos_directory+'/CLIMA/IO/input_clima.dat', output_directory) 
 
         print('Running clima finished')
 
