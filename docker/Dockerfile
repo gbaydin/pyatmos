@@ -9,6 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates &&\
     rm -rf /var/lib/apt/lists/*
 
+# dummy command for docker 
+RUN echo hello world
+
 # Get ATMOS
 RUN mkdir /code/ && cd /code/ && git clone https://gitlab.com/frontierdevelopmentlab/astrobiology/atmos.git
 RUN export ATMOSDIR=/code/atmos 
