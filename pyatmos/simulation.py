@@ -339,7 +339,7 @@ class Simulation():
                 line = 'NSTEPS=    {0}           !step number (200 recommended for coupling)\n'.format(max_clima_steps)
             if 'IMET=' in line and methane_concentration > 1e-4:
                 line = 'IMET=      1\n'
-            if 'IUP=' in line:
+            if 'IUP=       1' in line:
                 line = 'IUP=       0\n' 
             replacement_clima.append(line)
         tmp_file_name = tempfile.NamedTemporaryFile().name
