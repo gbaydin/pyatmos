@@ -4,12 +4,12 @@ import platform
 
 # for MAC
 if platform.system() == 'Darwin':
-    BASE_ATMOS = '/Users/Will/Documents/FDL/atmos'
-    BASE_RESULTS '/Users/Will/Documents/FDL/results/distance_scan'
+    BASE_ATMOS   = '/Users/Will/Documents/FDL/atmos'
+    BASE_RESULTS = '/Users/Will/Documents/FDL/results/distance_scan'
 
 # for GCS
 if platform.system() == 'Linux':
-    BASE_ATMOS = '/home/willfaw/atmos'
+    BASE_ATMOS   = '/home/willfaw/atmos'
     BASE_RESULTS = '/home/willfaw/results/distance_scan'
 
 atmos = Simulation(code_path = BASE_ATMOS, DEBUG=True)
