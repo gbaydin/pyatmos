@@ -15,6 +15,7 @@ if platform.system() == 'Linux':
 atmos = Simulation(code_path = BASE_ATMOS, DEBUG=True)
 
 distances = [ 0.39, 0.723, 1.0, 1.524, 2.0, 3.0 ]
+distances = [1.0]
 print(distances)
 for distance in distances:
     flux_scaling = 1.0 / distance**2

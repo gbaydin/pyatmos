@@ -169,6 +169,7 @@ class Simulation():
                                     output_directory = output_directory,
                                     debug=self._debug )
 
+        return clima_converged
 
 
     #_________________________________________________________________________
