@@ -21,9 +21,10 @@ for it in range(0, ITERATIONS):
     #print('iteration', it, 'concentration', concentration)
     
     args = {
+        'save_logfiles' : True,
         'species_concentrations' : {'H2O': 0.2, 'CO2': 0.0004, 'CH4': 1.63e-06, 'O2': 0.2, 'H2': 8.13e-08},
         'max_photochem_iterations' : 10000, 
-        'max_clima_steps' : 100, 
+        'max_clima_steps' : 10, 
         'output_directory' : '/Users/Will/Documents/FDL/results/run_{1}_{0}'.format(it, OVERALL_RUN),
         'run_iteration_call' : it
     }
@@ -41,4 +42,4 @@ for it in range(0, ITERATIONS):
     print(data)
     print('')
 
-atmos.exit()
+atmos.close()

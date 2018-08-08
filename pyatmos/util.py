@@ -98,5 +98,78 @@ def printcol(text, fgcol='white', style='normal', bgcol='none'):
     return colstring
 
 
+#____________________________________________________________________________
+def plot_multiscatter(dataframe, xvariables, xlabel, yvariable, ylabel, save_name):
+    """Wrapper for matplotlib scatter
+    Plot multiple scatter plots on the same figure
+    Will also save with normal, log and symlog 
+    """
+    import matplotlib.pyplot as plt
+    maximum = find_set_maximum(dataframe, xvariables)
+    minimum = find_set_minimum(dataframe, xvariables)
 
+    for xvar in xvariables:
+        plt.scatter(dataframe[xvar], dataframe[yvariable],label=xvar) 
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+
+    plt.legend()
+    plt.xlim(xmin=minimum, xmax=maximum)
+    plt.savefig(save_name)
+
+    # assumes only one "." in the save_name, 
+    save_name_symlog = save_name.replace('.', '_symlog.')
+    plt.xscale('symlog')
+    plt.savefig(save_name_symlog)
+
+    plt.xscale('log')
+    save_name_log = save_name_symlog.replace('_symlog','_log')
+    plt.savefig(save_name_log)
+
+    # clear plot 
+    plt.clf()
+
+
+
+#____________________________________________________________________________
+def plot_scatter(dataframe, xvariable, xlabel, yvariable, ylabel, save_name, do_log=False):
+    '''
+    Wrapper for matplotlib scatter
+    Plot and save a simple scatter plot of xvariable against yvariable
+    Will label the axes as xlabel, ylabel
+    Args:
+        dataframe: pandas DataFrame.
+        xvariable: Name of xvariable to be plotted, must be inside dataframe
+        yvariable: Name of yvariable to be plotted, must be inside dataframe
+        xlabel: string, x-axis label
+        ylabel: string, y-axis label
+        save_name: string, path of where to save the plot, must have file extension (e.g. .pdf)
+        do_log: bool, have x-axis log scale (default false)
+    '''
+    import matplotlib.pyplot as plt
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.scatter(dataframe[xvariable], dataframe[yvariable]) 
+    if do_log:
+        plt.xscale('log')
+    plt.savefig(save_name)
+    plt.clf()
+
+
+#_____________________________________________________________________________
+def find_set_minimum(df, columns):
+    '''
+    Find minimum of a set of columns from a pandas dataframe
+    '''
+    import numpy as np
+    return np.amin( df.loc[:, columns].min(axis=1) )
+
+#_____________________________________________________________________________
+def find_set_maximum(df, columns):
+    '''
+    Find maximum of a set of columns from a pandas dataframe
+    '''
+    import numpy as np
+    return np.amax( df.loc[:, columns].max(axis=1) )
 

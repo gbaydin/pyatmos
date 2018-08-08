@@ -229,7 +229,16 @@ def table_to_dataframe(table):
     '''
 
 #_____________________________________________________________________________
-def parse_clima(input_file, output_directory, debug):
+def parse_clima(input_file, output_directory, debug=False):
+    """Parse the clima output file named 'out.out' and turn into a CSV file 
+    There are two 'tables' extracted from the 'out.out' file, each of which is bounded 
+    by the string 'binding' 
+    Each table is written to a separate csv file
+    Args:
+        input_file: string, path to the out.out file
+        output_directory: string, path to the directory to store the results
+        debug: bool, turn on/off debug mode (default off) 
+    """
 
     # Define the "boxing" used in the clima output file
     binding = "J     P         ALT         T        CONVEC       DT          TOLD        FH20       FSAVE        FO3        TCOOL       THEAT"

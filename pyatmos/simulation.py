@@ -252,22 +252,56 @@ class Simulation():
 
         # if clima didn't converge, exit
         if not clima_converged:
+            self._run_time_end = pyatmos.util.UTC_now()
             return 'clima_error'
         else:
             print('clima converged')
 
-        self._run_time_end = pyatmos.util.UTC_now()
 
-        # parse the output of photochem and clima (writes output as pandas csv file) 
+        # parse the output of clima (writes output as pandas csv file) 
         pyatmos.parser.parse_clima(input_file = output_directory+'/clima_allout.tab',
                                     output_directory = output_directory,
                                     debug=self._debug )
 
+        # parse the output of photochem (writes output as pandas csv file) 
         pyatmos.parser.parse_photochem(input_file = output_directory+'/out.out',
                                     output_directory = output_directory,
                                     debug=self._debug )
 
-        
+        #########################################
+        # Add *basic* plots to the output directory 
+        # Hard coded here, one should do this offline 
+        #########################################
+
+        # get the clima dataframe
+        try:
+            import pandas as pd 
+            self.debug('read pandas dataframe {0}'.format(output_directory+'/parsed_clima_final.csv'))
+            clima_df = pd.read_csv(output_directory+'/parsed_clima_final.csv')
+            self.debug('Creating plot {0}'.format(output_directory+'/pressure_altitide.pdf'))
+            pyatmos.util.plot_scatter(clima_df, xvariable='P', xlabel='Pressure [bar]', yvariable='ALT', ylabel='Altitide [km]', save_name = output_directory+'/pressure_altitide.pdf')   
+            self.debug('Creating plot {0}'.format(output_directory+'/pressure_temperature.pdf'))
+            pyatmos.util.plot_scatter(clima_df, xvariable='T', xlabel='Temperature [K]', yvariable='ALT', ylabel='Altitide [km]', save_name = output_directory+'/pressure_temperature.pdf')   
+
+            # get photochem dataframes 
+            self.debug('read pandas dataframe {0}'.format(output_directory+'/parsed_photochem_mixing_ratios.csv'))
+            photo_mixing_df = pd.read_csv(output_directory+'/parsed_photochem_mixing_ratios.csv')
+            self.debug('read pandas dataframe {0}'.format(output_directory+'/parsed_photochem_fluxes.csv'))
+            photo_flux_df   = pd.read_csv(output_directory+'/parsed_photochem_fluxes.csv')
+            # convert cm to km 
+            photo_mixing_df['Z']  = photo_mixing_df['Z']/1e5
+            photo_flux_df['Z']    = photo_flux_df['Z']/1e5 
+            # make plot
+            gases = ['O3', 'H2O', 'CO', 'CH4', 'CO2', 'O2', 'H2'] 
+            self.debug('Creating plot {0}'.format(output_directory + '/mixingratio_altitide.pdf'))
+            pyatmos.util.plot_multiscatter(photo_mixing_df, xvariables=gases, xlabel='Mixing ratio', yvariable='Z', ylabel='Altitide [km]', save_name = output_directory + '/mixingratio_altitide.pdf')
+            self.debug('Creating plot {0}'.format(output_directory + '/flux_altitide.pdf'))
+            pyatmos.util.plot_multiscatter(photo_flux_df, xvariables=gases, xlabel='Flux [molecules s$^{-1}$ cm$^{-2}$]', yvariable='Z', ylabel='Altitide [km]', save_name = output_directory + '/flux_altitide.pdf')
+        except:
+            # above is non-critical standalone code, so the inoring of errors is deliberate 
+            pass 
+
+        self._run_time_end = pyatmos.util.UTC_now()
         print('Running finished.')
 
         return 'success' 
@@ -330,8 +364,8 @@ class Simulation():
             self._container.exec_run('./Photo.run')
         else:
             if self._save_logfiles:
-                #self._generic_run('cd {0} && ./Photo.run > {1}/Photo_log.txt 2>&1'.format(self._atmos_directory, output_directory))
-                self._generic_run('cd {0} && ./Photo.run 2>&1 | tee {1}/Photo_log.txt'.format(self._atmos_directory, output_directory))
+                self._generic_run('cd {0} && ./Photo.run > {1}/Photo_log.txt 2>&1'.format(self._atmos_directory, output_directory))
+                #self._generic_run('cd {0} && ./Photo.run 2>&1 | tee {1}/Photo_log.txt'.format(self._atmos_directory, output_directory))
             else:
                 self._generic_run('cd {0} && ./Photo.run'.format(self._atmos_directory))
         self._photochem_duration = pyatmos.util.UTC_now() - self._photochem_duration 
@@ -417,8 +451,8 @@ class Simulation():
             self._container.exec_run('./Clima.run')
         else:
             if self._save_logfiles:
-                #self._generic_run('cd {0} && ./Clima.run > {1}/Clima_log.txt 2>&1'.format(self._atmos_directory, output_directory))
-                self._generic_run('cd {0} && ./Clima.run 2>&1 | tee {1}/Clima_log.txt'.format(self._atmos_directory, output_directory))
+                self._generic_run('cd {0} && ./Clima.run > {1}/Clima_log.txt 2>&1'.format(self._atmos_directory, output_directory))
+                #self._generic_run('cd {0} && ./Clima.run 2>&1 | tee {1}/Clima_log.txt'.format(self._atmos_directory, output_directory))
             else:
                 self._generic_run('cd {0} && ./Clima.run'.format(self._atmos_directory))
         self._clima_duration = pyatmos.util.UTC_now() - self._clima_duration 
@@ -434,12 +468,13 @@ class Simulation():
 
         # post-process catch clima errors 
         # Read the log file
-        clima_logfile_path = local_output_directory + '/Clima_log.txt'
-        with open(clima_logfile_path, 'r') as file:
-            for line in file.readlines():
-                if ('Backtrace for this error:' in line) or ('#9  0xffffffffffffffff' in line):
-                    print('Detected clima crash inside logfile')
-                    return 'clima_error'
+        if self._save_logfiles:
+            clima_logfile_path = output_directory + '/Clima_log.txt'
+            with open(clima_logfile_path, 'r') as file:
+                for line in file.readlines():
+                    if ('Backtrace for this error:' in line) or ('#9  0xffffffffffffffff' in line): # can add more erros to this if they are found 
+                        print('Detected clima crash inside logfile: {0}'.format(line))
+                        return False
 
         print('Running clima finished')
 
@@ -649,10 +684,6 @@ class Simulation():
 
 
 
-    #_________________________________________________________________________
-    def _set_container_file(self):
-        # todo 
-        pass
 
     '''
     #_________________________________________________________________________
@@ -664,12 +695,6 @@ class Simulation():
         os.system(cmd)
         return pyatmos.util.read_file(tmp_file_name)
 
-    def run(self, iterations=1):
-        print('Running {} iterations...'.format(iterations))
-        for i in range(iterations):
-            print('Iteration {}'.format(i+1))
-            self._generic_run('./pyatmos_coupled_iterate.sh')
-        print('Done.')
 
     def get_input_clima(self):
         return self._get_container_file(self._atmos_directory+'/CLIMA/IO/input_clima.dat')
