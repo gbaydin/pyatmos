@@ -120,7 +120,11 @@ class Simulation():
         return input_dict, separated_dict
 
     #_________________________________________________________________________
-    def run_distance_modification(self, flux_scaling=1.0, max_clima_steps=400, output_directory=None):
+    def run_distance_modification(self, 
+            flux_scaling=1.0, 
+            max_clima_steps=400, 
+            save_logfiles = False,
+            output_directory=None):
         """Test function to modify the earth--sun distance
         meant to be run iteratively 
         Args:
@@ -128,6 +132,10 @@ class Simulation():
             Distance scales as 1/a^2 (a is semi-major axis) 
         """
 
+        # parse input arguments
+        self._save_logfiles = save_logfiles
+
+        # Make sure output directory set 
         if output_directory is None:
             print('Error, you must set the output_directory')
             import sys
