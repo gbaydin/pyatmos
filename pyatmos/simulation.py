@@ -134,12 +134,13 @@ class Simulation():
             sys.exit()
 
 
-        
         # make sure output directory exists
         os.system('mkdir -p {0}'.format(output_directory))
 
         # modify the clima input file with the flux scaling  
         # and make sure ICOUPLE=   0 (since we're probably not running in coupled mode?) TODO, consider if this is the case? 
+        self.debug('reading file {0}'.format(self._atmos_directory+'/CLIMA/IO/input_clima.dat'))
+
         clima_input = self._read_container_file(self._atmos_directory+'/CLIMA/IO/input_clima.dat') # clima_input: file containing strings of input_clima.dat 
         new_clima_file_name = tempfile.NamedTemporaryFile().name
         new_clima_file = open(new_clima_file_name, 'w')
