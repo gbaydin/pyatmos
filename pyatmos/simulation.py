@@ -120,6 +120,49 @@ class Simulation():
         return input_dict, separated_dict
 
     #_________________________________________________________________________
+    def run_distance_modification(self, flux_scaling=1.0, max_clima_steps=400, output_directory=None):
+        """Test function to modify the earth--sun distance
+        meant to be run iteratively 
+        Args:
+            flux_scaling: float, the fraction of the solar radiance relative to earth. Value of 1.0 corresponds to earth
+            Distance scales as 1/a^2 (a is semi-major axis) 
+        """
+
+        if output_directory is None:
+            print('Error, you must set the output_directory')
+            import sys
+            sys.exit()
+
+
+        
+        # make sure output directory exists
+        os.system('mkdir -p {0}'.format(output_directory))
+
+        # modify the clima input file with the flux scaling  
+        # and make sure ICOUPLE=   0 (since we're probably not running in coupled mode?) TODO, consider if this is the case? 
+        clima_input = self._read_container_file(self._atmos_directory+'/CLIMA/IO/input_clima.dat') # clima_input: file containing strings of input_clima.dat 
+        new_clima_file_name = tempfile.NamedTemporaryFile().name
+        new_clima_file = open(new_clima_file_name, 'w')
+        for line in clima_input:
+            if 'SOLCON=  ' in line:
+                line = 'SOLCON=    {0}\n'.format(flux_scaling)
+            if 'ICOUPLE=   ' in line:
+                line = 'ICOUPLE=   0\n'
+            new_clima_file.write(line)
+        new_clima_file.close()
+        self._write_container_file(new_clima_file_name, self._atmos_directory+'/CLIMA/IO/input_clima.dat')
+
+        # run clima
+        clima_converged = self._run_clima(max_clima_steps, output_directory, methane_concentration = 0)
+        
+        # parse the output of photochem and clima (writes output as pandas csv file) 
+        pyatmos.parser.parse_clima(input_file = output_directory+'/clima_allout.tab',
+                                    output_directory = output_directory,
+                                    debug=self._debug )
+
+
+
+    #_________________________________________________________________________
     def run(self, 
             species_concentrations={}, 
             species_fluxes={},
@@ -315,7 +358,7 @@ class Simulation():
         return 'success' 
 
     #_________________________________________________________________________
-    def _run_clima(self, max_clima_steps, output_directory, methane_concentration, previous_clima_solution):
+    def _run_clima(self, max_clima_steps, output_directory, methane_concentration, previous_clima_solution=None):
 
 
 

@@ -3,7 +3,7 @@ THISDIR=os.path.dirname(os.path.abspath(__file__))
 
 import pyatmos
 
-OVERALL_RUN = 5
+OVERALL_RUN = 6
 ITERATIONS = 2
 
 atmos = pyatmos.Simulation(
@@ -23,7 +23,7 @@ for it in range(0, ITERATIONS):
     args = {
         'species_concentrations' : {'H2O': 0.2, 'CO2': 0.0004, 'CH4': 1.63e-06, 'O2': 0.2, 'H2': 8.13e-08},
         'max_photochem_iterations' : 10000, 
-        'max_clima_steps' : 400, 
+        'max_clima_steps' : 100, 
         'output_directory' : '/Users/Will/Documents/FDL/results/run_{1}_{0}'.format(it, OVERALL_RUN),
         'run_iteration_call' : it
     }
