@@ -3,7 +3,7 @@ from pyatmos import Simulation
 import platform
 
 # for MAC
-if platform.system() == 'Darwin'
+if platform.system() == 'Darwin':
     BASE_ATMOS = '/Users/Will/Documents/FDL/atmos'
     BASE_RESULTS '/Users/Will/Documents/FDL/results/distance_scan'
 
