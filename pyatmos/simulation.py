@@ -431,6 +431,16 @@ class Simulation():
         self._copy_container_file(self._atmos_directory+'/COUPLE/mixing_ratios.dat', output_directory)  
         self._copy_container_file(self._atmos_directory+'/CLIMA/IO/input_clima.dat', output_directory) 
 
+
+        # post-process catch clima errors 
+        # Read the log file
+        clima_logfile_path = local_output_directory + '/Clima_log.txt'
+        with open(clima_logfile_path, 'r') as file:
+            for line in file.readlines():
+                if ('Backtrace for this error:' in line) or ('#9  0xffffffffffffffff' in line):
+                    print('Detected clima crash inside logfile')
+                    return 'clima_error'
+
         print('Running clima finished')
 
         return True 
