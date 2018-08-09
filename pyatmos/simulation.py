@@ -277,13 +277,18 @@ class Simulation():
         # get the clima dataframe
         try:
             import pandas as pd 
+            # plotting for clima
             self.debug('read pandas dataframe {0}'.format(output_directory+'/parsed_clima_final.csv'))
             clima_df = pd.read_csv(output_directory+'/parsed_clima_final.csv')
             self.debug('Creating plot {0}'.format(output_directory+'/pressure_altitide.pdf'))
             pyatmos.util.plot_scatter(clima_df, xvariable='P', xlabel='Pressure [bar]', yvariable='ALT', ylabel='Altitide [km]', save_name = output_directory+'/pressure_altitide.pdf')   
             self.debug('Creating plot {0}'.format(output_directory+'/pressure_temperature.pdf'))
             pyatmos.util.plot_scatter(clima_df, xvariable='T', xlabel='Temperature [K]', yvariable='ALT', ylabel='Altitide [km]', save_name = output_directory+'/pressure_temperature.pdf')   
+        except:
+            print('Exception occoured during clima plotting, not handeled')
+            pass
 
+        try:
             # get photochem dataframes 
             self.debug('read pandas dataframe {0}'.format(output_directory+'/parsed_photochem_mixing_ratios.csv'))
             photo_mixing_df = pd.read_csv(output_directory+'/parsed_photochem_mixing_ratios.csv')
@@ -299,7 +304,7 @@ class Simulation():
             self.debug('Creating plot {0}'.format(output_directory + '/flux_altitide.pdf'))
             pyatmos.util.plot_multiscatter(photo_flux_df, xvariables=gases, xlabel='Flux [molecules s$^{-1}$ cm$^{-2}$]', yvariable='Z', ylabel='Altitide [km]', save_name = output_directory + '/flux_altitide.pdf')
         except:
-            # above is non-critical standalone code, so the inoring of errors is deliberate 
+            print('Exception occoured during photochem plotting, not handeled')
             pass 
 
         self._run_time_end = pyatmos.util.UTC_now()
@@ -481,6 +486,26 @@ class Simulation():
 
         return True 
 
+
+    
+    #_________________________________________________________________________
+    @staticmethod
+    def get_surface_fluxes(parsed_photochem_file, gas_fluxes):
+        '''
+        Return the gas flux at the suface from the processed photochem output file
+        Args:
+            parsed_photochem_file: a processed photochem file with fluxes, in csv format
+            gas_fluxes: list of gases to get the flux for
+        Returns:
+            A dictionary of {'gas' : flux }
+        '''
+        import pandas as pd
+        df = pd.read_csv(parsed_photochem_file)
+        fluxes = df[df['Z'] == 0]
+        surface_fluxes = {}
+        for gas in gas_fluxes:
+            surface_fluxes[gas] = float(fluxes[gas]) # save only the float, that's all we need!
+        return surface_fluxes
 
 
 
