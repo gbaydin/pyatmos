@@ -99,25 +99,6 @@ class Simulation():
         else:
             print('pyatmos is ready to go! ')
 
-    #_________________________________________________________________________
-    @staticmethod
-    def split_dictionary(input_dict, species='N2'):
-        '''
-        Splits the input dictionary into two by taking out the 'species' element from the input dictionary and putting that into a new one
-        Args:
-            input_dict: dictionary
-            species: key, a key that is inside the input_dictionary
-        Returns
-            input_dict: dictionary, a dictionary with the "species" element removed
-            separated_dict: dictionary, a dictionary containing the removed element {species : value}
-        '''
-
-        try:
-            value = input_dict.pop(species)
-            separated_dict = {species : value}
-        except KeyError:
-            separated_dict = {}
-        return input_dict, separated_dict
 
     #_________________________________________________________________________
     def run_distance_modification(self, 
@@ -176,13 +157,14 @@ class Simulation():
     def run(self, 
             species_concentrations={}, 
             species_fluxes={},
+            flux_scaling=None,
             max_photochem_iterations=10000, 
             max_clima_steps=500, 
             previous_photochem_solution = None,
             previous_clima_solution = None, 
             output_directory='/Users/Will/Documents/FDL/results',
             run_iteration_call = None,
-            save_logfiles = False
+            save_logfiles = False,
             ):
         '''
         Configures and runs ATMOS, then collects the output.  
@@ -236,7 +218,7 @@ class Simulation():
 
 
         # run the photochemical model 
-        photochem_converged = self._run_photochem(species_concentrations, species_fluxes, max_photochem_iterations, output_directory, previous_photochem_solution)
+        photochem_converged = self._run_photochem(species_concentrations, species_fluxes, max_photochem_iterations, output_directory, previous_photochem_solution, flux_scaling)
 
         # if photochem didn't converge, exit 
         if photochem_converged != 'success': 
@@ -249,7 +231,7 @@ class Simulation():
             methane_concentration = species_concentrations['CH4'] 
         else: 
             methane_concentration = 1.80E-06 
-        clima_converged = self._run_clima(max_clima_steps, output_directory, methane_concentration, previous_clima_solution)
+        clima_converged = self._run_clima(max_clima_steps, output_directory, methane_concentration, previous_clima_solution, flux_scaling)
 
         # if clima didn't converge, exit
         if not clima_converged:
@@ -336,7 +318,7 @@ class Simulation():
                 }
 
     #_________________________________________________________________________
-    def _run_photochem(self, species_concentrations, species_fluxes, max_photochem_iterations, output_directory, previous_photochem_solution):
+    def _run_photochem(self, species_concentrations, species_fluxes, max_photochem_iterations, output_directory, previous_photochem_solution, flux_scaling):
         '''
         Function to actually run the photochemical model, copies the results once finished 
         '''
@@ -349,7 +331,13 @@ class Simulation():
         print('Modified species file with concentrations: {0}'.format(species_concentrations) )
         print('Modified species file with fluxes: {0}'.format(species_fluxes) )
 
-        
+
+        # modify the solar distance, if relevant
+        if flux_scaling is not None:
+            # modify planet.dat
+            print('Modifying PLANET.dat with solar flux {0:.2f}'.format(flux_scaling))
+            self._modify_photochem_planet(flux_scaling) 
+
         # put in the new in.dist file (can be from previous run of photochem)
         if previous_photochem_solution:
             self._write_container_file(previous_photochem_solution, self._atmos_directory+'/PHOTOCHEM/in.dist')
@@ -403,7 +391,7 @@ class Simulation():
         return 'success' 
 
     #_________________________________________________________________________
-    def _run_clima(self, max_clima_steps, output_directory, methane_concentration, previous_clima_solution=None):
+    def _run_clima(self, max_clima_steps, output_directory, methane_concentration, previous_clima_solution=None, flux_scaling=None):
 
 
 
@@ -427,6 +415,8 @@ class Simulation():
                 line = 'NSTEPS=    {0}           !step number (200 recommended for coupling)\n'.format(max_clima_steps)
             if 'IMET=' in line and methane_concentration > 1e-4:
                 line = 'IMET=      1\n'
+            if (flux_scaling is not None) and 'SOLCON=  ' in line:
+                line = 'SOLCON=    {0}\n'.format(flux_scaling)
             if 'IUP=       1' in line:
                 line = 'IUP=       0\n' 
             replacement_clima.append(line)
@@ -482,6 +472,25 @@ class Simulation():
         return True 
 
 
+    #_________________________________________________________________________
+    @staticmethod
+    def split_dictionary(input_dict, species='N2'):
+        '''
+        Splits the input dictionary into two by taking out the 'species' element from the input dictionary and putting that into a new one
+        Args:
+            input_dict: dictionary
+            species: key, a key that is inside the input_dictionary
+        Returns
+            input_dict: dictionary, a dictionary with the "species" element removed
+            separated_dict: dictionary, a dictionary containing the removed element {species : value}
+        '''
+
+        try:
+            value = input_dict.pop(species)
+            separated_dict = {species : value}
+        except KeyError:
+            separated_dict = {}
+        return input_dict, separated_dict
 
 
     #_________________________________________________________________________
@@ -577,6 +586,24 @@ class Simulation():
         #self._write_container_file(new_species_filename, old_species_filename) 
         self._write_container_file(new_species_filename, self._atmos_directory+'/PHOTOCHEM/INPUTFILES/species.dat' ) 
     
+
+    #_________________________________________________________________________
+    def _modify_photochem_planet(self, flux_scaling):
+        '''
+        Modifies the FSCALE parameter in PLANET.dat 
+        '''
+        planet_dat_lines = _read_container_file(self._atmos_directory+'/PHOTOCHEM/INPUTFILES/PLANET.dat')
+
+        tmp_planet_file = open(tempfile.NamedTemporaryFile().name, 'w')
+        for line in planet_dat_lines:
+            if '= FSCALE' in line:  
+                line = '{0:.2f}     = FSCALE, Solar Flux Scaling - Earth=1.0, Mars=0.43\n' 
+            tmp_planet_file.write(line)
+        tmp_planet_file.close()
+        self._write_container_file(tmp_planet_file, self._atmos_directory+'/PHOTOCHEM/INPUTFILES/PLANET.dat')
+
+        
+        
 
     #_________________________________________________________________________
     def _check_photochem_convergence(self, max_photochem_iterations):
