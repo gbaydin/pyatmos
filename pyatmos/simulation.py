@@ -504,7 +504,7 @@ class Simulation():
         fluxes = df[df['Z'] == 0]
         surface_fluxes = {}
         for gas in gas_fluxes:
-            surface_fluxes[gas] = float(fluxes[gas]) # save only the float, that's all we need!
+            surface_fluxes['flux_'+gas] = float(fluxes[gas]) # save only the float, that's all we need!
         return surface_fluxes
 
 
