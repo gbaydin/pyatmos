@@ -592,15 +592,16 @@ class Simulation():
         '''
         Modifies the FSCALE parameter in PLANET.dat 
         '''
-        planet_dat_lines = _read_container_file(self._atmos_directory+'/PHOTOCHEM/INPUTFILES/PLANET.dat')
+        planet_dat_lines = self._read_container_file(self._atmos_directory+'/PHOTOCHEM/INPUTFILES/PLANET.dat')
 
-        tmp_planet_file = open(tempfile.NamedTemporaryFile().name, 'w')
+        tmp_planet_filename = tempfile.NamedTemporaryFile().name
+        tmp_planet_file = open(tmp_planet_filename, 'w')
         for line in planet_dat_lines:
             if '= FSCALE' in line:  
-                line = '{0:.2f}     = FSCALE, Solar Flux Scaling - Earth=1.0, Mars=0.43\n' 
+                line = '{0:.2f}     = FSCALE, Solar Flux Scaling - Earth=1.0, Mars=0.43\n'.format(flux_scaling) 
             tmp_planet_file.write(line)
         tmp_planet_file.close()
-        self._write_container_file(tmp_planet_file, self._atmos_directory+'/PHOTOCHEM/INPUTFILES/PLANET.dat')
+        self._write_container_file(tmp_planet_filename, self._atmos_directory+'/PHOTOCHEM/INPUTFILES/PLANET.dat')
 
         
         
